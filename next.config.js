@@ -6,6 +6,16 @@ const nextConfig = {
 
   // No generar source maps en producción (protege código fuente)
   productionBrowserSourceMaps: false,
+
+  // Omitir ESLint durante el build de producción (se corre por separado en CI)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Omitir errores de TypeScript durante el build de producción
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 };
 
 module.exports = nextConfig;

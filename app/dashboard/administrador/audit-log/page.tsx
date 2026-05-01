@@ -3,18 +3,9 @@
 import { useEffect, useState } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { type AuditEntry, logAudit, AUDIT_LS_KEY } from "@/lib/audit-log";
 
 const BASE = "/dashboard/administrador";
-
-export interface AuditEntry {
-  id: number;
-  timestamp: string;   // ISO string
-  user: string;
-  role: "Admin" | "Maestro" | "Alumno";
-  action: string;      // ej. "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT"
-  entity: string;      // ej. "Usuario" | "Calificación"
-  detail: string;
-}
 
 const SEED: AuditEntry[] = [
   { id: 1, timestamp: "2024-06-28T09:15:00Z", user: "admin@cbt5.edu.mx",     role: "Admin",   action: "LOGIN",  entity: "Sesión",       detail: "Inicio de sesión exitoso" },
@@ -32,19 +23,6 @@ const actionColor: Record<string, string> = {
   DELETE:  "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
 };
 
-const LS_KEY = "cbt-audit-log";
-
-/** Escribe una entrada nueva en el audit log (llamar desde otros módulos) */
-export function logAudit(entry: Omit<AuditEntry, "id" | "timestamp">) {
-  if (typeof window === "undefined") return;
-  const prev: AuditEntry[] = JSON.parse(localStorage.getItem(LS_KEY) ?? "[]");
-  const newEntry: AuditEntry = {
-    ...entry,
-    id: Date.now(),
-    timestamp: new Date().toISOString(),
-  };
-  localStorage.setItem(LS_KEY, JSON.stringify([newEntry, ...prev]));
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
@@ -58,12 +36,11 @@ export default function AuditLogPage() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem(LS_KEY);
+    const stored = localStorage.getItem(AUDIT_LS_KEY);
     if (stored) {
       setLogs(JSON.parse(stored));
     } else {
-      // Cargar seed solo la primera vez
-      localStorage.setItem(LS_KEY, JSON.stringify(SEED));
+      localStorage.setItem(AUDIT_LS_KEY, JSON.stringify(SEED));
       setLogs(SEED);
     }
   }, []);
@@ -80,7 +57,7 @@ export default function AuditLogPage() {
 
   function handleClear() {
     if (!confirm("¿Eliminar todo el historial de auditoría? Esta acción no se puede deshacer.")) return;
-    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(AUDIT_LS_KEY);
     setLogs([]);
   }
 
