@@ -77,6 +77,31 @@ export default function DashboardTopbar({
   showSearch = false,
   linkBase,
 }: DashboardTopbarProps) {
+  const [displayName, setDisplayName]     = useState(userName);
+  const [displayRole, setDisplayRole]     = useState(userRole);
+  const [displayImage, setDisplayImage]   = useState(userImageSrc);
+
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        if (data.nombre)   setDisplayName(data.nombre);
+        if (data.rol) {
+          const labels: Record<string, string> = {
+            admin:   "Administrador",
+            maestro: "Maestro",
+            alumno:  "Alumno",
+            padres:  "Padre de Familia",
+          };
+          setDisplayRole(labels[data.rol] ?? data.rol);
+        }
+        if (data.foto_url) setDisplayImage(data.foto_url);
+      })
+      .catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const activeClass =
     "text-sm font-semibold text-blue-700 dark:text-blue-400 border-b-2 border-blue-700 dark:border-blue-400 pb-1 transition-all";
   const inactiveClass =
@@ -147,7 +172,7 @@ export default function DashboardTopbar({
   const markAllRead = ()           => setNotifs((p) => p.map((n) => ({ ...n, leido: true })));
 
   // Iniciales del usuario para avatar fallback
-  const initials = userName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
   return (
     <header className="fixed top-0 w-full z-50 flex justify-between items-center px-4 md:px-6 h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
@@ -319,14 +344,14 @@ export default function DashboardTopbar({
             className="flex items-center gap-1.5 pl-1 pr-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title="Mi perfil"
           >
-            {userImageSrc ? (
-              <img src={userImageSrc} alt={userImageAlt} className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-600" />
+            {displayImage ? (
+              <img src={displayImage} alt={userImageAlt} className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-600" />
             ) : (
               <div className="w-7 h-7 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
                 {initials || "A"}
               </div>
             )}
-            <span className="hidden lg:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[100px] truncate">{userName}</span>
+            <span className="hidden lg:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[100px] truncate">{displayName}</span>
             <span className="hidden lg:block text-slate-400"><IconChevron /></span>
           </button>
 
@@ -334,16 +359,16 @@ export default function DashboardTopbar({
             <div className="absolute right-0 top-11 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50">
               {/* Info usuario */}
               <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                {userImageSrc ? (
-                  <img src={userImageSrc} alt={userImageAlt} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                {displayImage ? (
+                  <img src={displayImage} alt={userImageAlt} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center flex-shrink-0">
                     {initials || "A"}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{userRole}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{displayName}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{displayRole}</p>
                 </div>
               </div>
 

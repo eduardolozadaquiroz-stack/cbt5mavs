@@ -3,9 +3,6 @@ import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDBJFu1eTFJVZnEIpf-KZZvSc_2ffZQGUirP05eqMK12TVBzwigT9EauHtrNVGTd-67_1LsY_0TUiZTt05HcyZXomBqsm1Kv6mJ9lOeQcUvsx9rZTLrY0ASxcVj2CMDkmyby29mUF551eD7wf5moJ9QLCBGlQObDInlM23i5b7BpfDkM3436o3JteJDAyE28ef_KoT1fTG6ZYBYE3KNLPUgFcRV7Y5IldhFMLtpChj4-jm42Hz2QxVhJU5Gbk1KUKsL6zRDWY4Uoiz6";
-
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -34,12 +31,24 @@ function passStrength(pass: string): { score: number; label: string; barColor: s
 
 export default function ConfiguracionAlumnoPage() {
   // ── Cuenta ──
-  const [correo,   setCorreo]   = useState("v.garcia@cbt5chalco.edu.mx");
-  const [telefono, setTelefono] = useState("55 1234 5678");
+  const [correo,   setCorreo]   = useState("");
+  const [telefono, setTelefono] = useState("");
   const [pass,     setPass]     = useState("");
   const [passConf, setPassConf] = useState("");
   const [showPass,     setShowPass]     = useState(false);
   const [showPassConf, setShowPassConf] = useState(false);
+
+  // Cargar datos reales al montar
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        if (data.correo)   setCorreo(data.correo);
+        if (data.telefono) setTelefono(data.telefono);
+      })
+      .catch(() => undefined);
+  }, []);
 
   // ── Notificaciones ──
   const [nUrgente,        setNUrgente]        = useState(true);
@@ -86,7 +95,7 @@ export default function ConfiguracionAlumnoPage() {
 
   return (
     <>
-      <DashboardTopbar userImageSrc={AVATAR} userImageAlt="User profile" linkBase="/dashboard/alumno" />
+      <DashboardTopbar userImageAlt="Mi perfil" linkBase="/dashboard/alumno" />
 
       <div className="flex pt-16 min-h-screen bg-surface-bright">
         <DashboardSidebar activeLink="inicio" headerVariant="simple" linkBase="/dashboard/alumno" />

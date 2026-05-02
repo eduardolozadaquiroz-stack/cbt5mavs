@@ -3,9 +3,6 @@ import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEzpJcll0X5d9jtID0KZQY9DQZRRq2urTYr7OTdd5wbN3bwTITJS_udArelmyFwKHp52jZMTZigPK27koZBzrOk8apUTBoENBTNSQ_9UV341OiiIG2ayvR2P6RSKF_-zlJhwraxvKTWP30vx0XqFtP3QHDJZtZ5q0FsLnV0k_-5Y9u3x3nfcJe2qD7R3eQk7iDmNl6Al0VZjLNgQ06SdDzzwjB1yyZU_u4Aiu24ZTFsCj_CbalIFeIYzf8-mCoS4Y8hn9Ux-Vpjacf";
-
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -34,12 +31,24 @@ function passStrength(pass: string): { score: number; label: string; barColor: s
 
 export default function ConfiguracionMaestroPage() {
   // ── Cuenta ──
-  const [correo,   setCorreo]   = useState("m.ramos@cbt5chalco.edu.mx");
-  const [telefono, setTelefono] = useState("55 9876 5432");
+  const [correo,   setCorreo]   = useState("");
+  const [telefono, setTelefono] = useState("");
   const [pass,     setPass]     = useState("");
   const [passConf, setPassConf] = useState("");
   const [showPass,     setShowPass]     = useState(false);
   const [showPassConf, setShowPassConf] = useState(false);
+
+  // Cargar datos reales al montar
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        if (data.correo)   setCorreo(data.correo);
+        if (data.telefono) setTelefono(data.telefono);
+      })
+      .catch(() => undefined);
+  }, []);
 
   // ── Notificaciones ──
   const [nUrgente,        setNUrgente]        = useState(true);
@@ -87,7 +96,7 @@ export default function ConfiguracionMaestroPage() {
 
   return (
     <>
-      <DashboardTopbar userImageSrc={AVATAR} userImageAlt="User profile" linkBase="/dashboard/maestro" />
+      <DashboardTopbar userImageAlt="Mi perfil" linkBase="/dashboard/maestro" />
 
       <div className="flex pt-16 min-h-screen bg-surface-bright">
         <DashboardSidebar activeLink="inicio" headerVariant="cbt-circle" linkBase="/dashboard/maestro" />

@@ -1,35 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import Link from "next/link";
 
 const BASE = "/dashboard/administrador";
 
-const alumnos = [
-  { id: "230145", nombre: "Hernandez Garcia, María",  carrera: "Gastronomía",      estatus: "Regular",   statusClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
-  { id: "230188", nombre: "López Silva, Carlos",       carrera: "Informática",       estatus: "En riesgo", statusClass: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200" },
-  { id: "220041", nombre: "Ramírez Ruiz, Ana",         carrera: "Diseño Asistido",   estatus: "Crítico",   statusClass: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200" },
-  { id: "230205", nombre: "Torres Vega, Diego",        carrera: "Informática",       estatus: "Regular",   statusClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
-  { id: "230112", nombre: "Vargas Soto, Elena",        carrera: "Gastronomía",       estatus: "En riesgo", statusClass: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200" },
-];
+interface ApiUsuario {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: string;
+  activo: boolean;
+}
 
 export default function DashboardAdministradorPage() {
   const [query, setQuery] = useState("");
+  const [usuarios, setUsuarios] = useState<ApiUsuario[]>([]);
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(true);
 
-  const filtrados = alumnos.filter(
-    (a) =>
-      a.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      a.id.includes(query) ||
-      a.carrera.toLowerCase().includes(query.toLowerCase())
+  useEffect(() => {
+    fetch("/api/admin/usuarios?limit=20")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setUsuarios(data.usuarios ?? []);
+        setTotalUsuarios(data.total ?? 0);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoadingUsuarios(false));
+  }, []);
+
+  const filtrados = usuarios.filter(
+    (u) =>
+      u.nombre.toLowerCase().includes(query.toLowerCase()) ||
+      u.correo.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
     <>
       <DashboardTopbar
-        userImageAlt="Administrador" userName="Mtra. Viderique" userRole="Administradora"
+        userImageAlt="Administrador"
         activeTopLink="dashboard"
         showSearch linkBase={BASE}
       />
@@ -76,7 +89,7 @@ export default function DashboardAdministradorPage() {
                 </div>
               </div>
               <div className="relative z-10">
-                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">1,245</span>
+                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">{loadingUsuarios ? "…" : totalUsuarios.toLocaleString()}</span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-green-600">
                     <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
@@ -191,7 +204,7 @@ export default function DashboardAdministradorPage() {
                 <table className="w-full text-left text-sm min-w-[600px]">
                   <thead className="bg-surface-variant sticky top-0 z-10">
                     <tr>
-                      {["Matrícula", "Nombre", "Carrera", "Estatus", "Acciones"].map((h, i) => (
+                      {["Correo", "Nombre", "Rol", "Estado", "Acciones"].map((h, i) => (
                         <th key={h} className={`p-2 px-4 border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider ${i === 4 ? "text-right" : ""}`}>
                           {h}
                         </th>
@@ -199,34 +212,33 @@ export default function DashboardAdministradorPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtrados.length === 0 ? (
+                    {loadingUsuarios ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-8 text-on-surface-variant text-sm">Cargando…</td>
+                      </tr>
+                    ) : filtrados.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="text-center py-8 text-on-surface-variant text-sm">
-                          Sin resultados para &ldquo;{query}&rdquo;
+                          {query ? `Sin resultados para "${query}"` : "Sin registros"}
                         </td>
                       </tr>
                     ) : (
                       filtrados.map((row) => (
                         <tr key={row.id} className="odd:bg-surface even:bg-surface-bright hover:bg-surface-container-lowest transition-colors">
-                          <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant font-mono">{row.id}</td>
+                          <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant font-mono text-xs">{row.correo}</td>
                           <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{row.nombre}</td>
-                          <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{row.carrera}</td>
+                          <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant capitalize">{row.rol}</td>
                           <td className="p-2 px-4 border-b border-outline-variant">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.statusClass}`}>
-                              {row.estatus}
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.activo ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" : "bg-amber-100 text-amber-800"}`}>
+                              {row.activo ? "Activo" : "Pendiente"}
                             </span>
                           </td>
                           <td className="p-2 px-4 border-b border-outline-variant text-right">
-                            <button className="text-on-surface-variant hover:text-primary p-1 rounded transition-colors" title="Editar">
+                            <Link href={`${BASE}/usuarios`} className="text-on-surface-variant hover:text-primary p-1 rounded transition-colors inline-block" title="Ver en usuarios">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>
                               </svg>
-                            </button>
-                            <button className="text-on-surface-variant hover:text-secondary p-1 rounded transition-colors" title="Reporte">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                              </svg>
-                            </button>
+                            </Link>
                           </td>
                         </tr>
                       ))
@@ -237,7 +249,7 @@ export default function DashboardAdministradorPage() {
 
               {/* Paginación */}
               <div className="p-2 px-4 border-t border-outline-variant flex justify-between items-center text-sm text-on-surface-variant">
-                <span>Mostrando {filtrados.length} de 1,245 registros</span>
+                <span>Mostrando {filtrados.length} de {totalUsuarios.toLocaleString()} registros</span>
                 <div className="flex gap-1">
                   <button className="px-2 py-1 rounded border border-outline-variant disabled:opacity-40" disabled>&lt;</button>
                   <button className="px-2 py-1 rounded border border-outline-variant bg-primary text-on-primary">1</button>

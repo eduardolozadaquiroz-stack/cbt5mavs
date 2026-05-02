@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
@@ -9,18 +9,21 @@ const BASE = "/dashboard/administrador";
 type Rol = "Todos" | "Alumno" | "Maestro" | "Admin";
 type RolNuevo = "Alumno" | "Maestro" | "Admin";
 
-const usuariosIniciales = [
-  { id: 1, nombre: "Hernandez Garcia, María",   rol: "Alumno",   matricula: "230145", email: "m.hernandez@cbt5.edu.mx", activo: true },
-  { id: 2, nombre: "López Silva, Carlos",        rol: "Alumno",   matricula: "230188", email: "c.lopez@cbt5.edu.mx",     activo: true },
-  { id: 3, nombre: "Ramírez Ruiz, Ana",          rol: "Alumno",   matricula: "220041", email: "a.ramirez@cbt5.edu.mx",   activo: true },
-  { id: 4, nombre: "Torres Vega, Diego",         rol: "Alumno",   matricula: "230205", email: "d.torres@cbt5.edu.mx",    activo: true },
-  { id: 5, nombre: "Vargas Soto, Elena",         rol: "Alumno",   matricula: "230112", email: "e.vargas@cbt5.edu.mx",    activo: false },
-  { id: 6, nombre: "Lic. García Mendoza, Rosa",  rol: "Maestro",  matricula: "M-001",  email: "r.garcia@cbt5.edu.mx",    activo: true },
-  { id: 7, nombre: "Ing. Pérez Castro, Juan",    rol: "Maestro",  matricula: "M-002",  email: "j.perez@cbt5.edu.mx",     activo: true },
-  { id: 8, nombre: "María Amparo Viderique",     rol: "Admin",    matricula: "A-001",  email: "admin@cbt5.edu.mx",       activo: true },
-];
+interface ApiUsuario {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: string;
+  telefono: string | null;
+  activo: boolean;
+  created_at: string;
+}
 
 const rolColors: Record<string, string> = {
+  alumno:  "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  maestro: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
+  admin:   "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
+  padres:  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200",
   Alumno:  "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
   Maestro: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
   Admin:   "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
@@ -45,12 +48,12 @@ const REQUISITOS: [keyof ReturnType<typeof checkPw>, string][] = [
 // ─── Modal Nuevo Usuario ──────────────────────────────────────────────────────
 function NuevoUsuarioModal({ onClose, onCreated }: {
   onClose: () => void;
-  onCreated: (u: typeof usuariosIniciales[0]) => void;
+  onCreated: () => void;
 }) {
-  const [step, setStep] = useState<"form" | "verify">("form");
+  const [step, setStep] = useState<"form" | "verify" | "saving">("form");
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
-  const [form, setForm] = useState({ nombre: "", matricula: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
+  const [form, setForm] = useState({ nombre: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingEmail, setPendingEmail] = useState("");
 
@@ -65,8 +68,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.nombre.trim())    e.nombre    = "El nombre es obligatorio.";
-    if (!form.matricula.trim()) e.matricula = "La matrícula es obligatoria.";
+    if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio.";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Ingresa un correo válido.";
     if (!allPwOk) e.pw = "La contraseña no cumple los requisitos.";
@@ -82,16 +84,31 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
     setStep("verify");
   }
 
-  function handleConfirmVerification() {
-    onCreated({
-      id: Date.now(),
-      nombre: form.nombre,
-      rol: form.rol,
-      matricula: form.matricula,
-      email: form.email,
-      activo: false, // activo solo cuando verifique correo
-    });
-    onClose();
+  async function handleConfirmVerification() {
+    setStep("saving");
+    try {
+      const res = await fetch("/api/admin/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre:   form.nombre,
+          correo:   form.email,
+          rol:      form.rol.toLowerCase(),
+          password: form.pw,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrors({ email: (data as { error?: string }).error ?? "Error al crear usuario." });
+        setStep("form");
+        return;
+      }
+      onCreated();
+      onClose();
+    } catch {
+      setErrors({ email: "Error de conexión. Intenta de nuevo." });
+      setStep("form");
+    }
   }
 
   const inputBase = "w-full px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-sm text-on-surface focus:outline-none focus:ring-1 transition-colors";
@@ -105,7 +122,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
           <h2 className="font-semibold text-on-surface text-base">
-            {step === "form" ? "Nuevo Usuario" : "Verificar Correo Electrónico"}
+            {step === "form" ? "Nuevo Usuario" : step === "saving" ? "Guardando…" : "Verificar Correo Electrónico"}
           </h2>
           <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -125,21 +142,14 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
               {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
             </div>
 
-            {/* Matrícula + Rol (lado a lado) */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Matrícula / ID</label>
-                <input value={form.matricula} onChange={(e) => set("matricula", e.target.value)} placeholder="230XXX" className={`${inputBase} ${errors.matricula ? inputErr : inputOk}`} />
-                {errors.matricula && <p className="text-xs text-red-600 mt-1">{errors.matricula}</p>}
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Rol</label>
-                <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={`${inputBase} ${inputOk}`}>
-                  <option value="Alumno">Alumno</option>
-                  <option value="Maestro">Maestro</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
+            {/* Rol */}
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Rol</label>
+              <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                <option value="Alumno">Alumno</option>
+                <option value="Maestro">Maestro</option>
+                <option value="Admin">Admin</option>
+              </select>
             </div>
 
             {/* Correo */}
@@ -316,11 +326,11 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
               </li>
             </ul>
             <div className="flex gap-3 w-full pt-2 border-t border-outline-variant">
-              <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">
+              <button type="button" onClick={onClose} disabled={step === "saving"} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">
                 Cerrar
               </button>
-              <button type="button" onClick={handleConfirmVerification} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Entendido, agregar usuario
+              <button type="button" onClick={handleConfirmVerification} disabled={step === "saving"} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">
+                {step === "saving" ? "Guardando…" : "Entendido, agregar usuario"}
               </button>
             </div>
           </div>
@@ -332,15 +342,39 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
 
 // ─── Modal Editar Usuario ────────────────────────────────────────────────────
 function ModalEditarUsuario({ usuario, onClose, onSaved }: {
-  usuario: typeof usuariosIniciales[0];
+  usuario: ApiUsuario;
   onClose: () => void;
-  onSaved: (u: typeof usuariosIniciales[0]) => void;
+  onSaved: () => void;
 }) {
-  const [form, setForm] = useState({ ...usuario });
+  const [form, setForm] = useState({ nombre: usuario.nombre, rol: usuario.rol, activo: usuario.activo });
+  const [saving, setSaving] = useState(false);
+  const [apiError, setApiError] = useState("");
+
   function set(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
   }
-  function handleSave() { onSaved(form); onClose(); }
+  async function handleSave() {
+    setSaving(true);
+    setApiError("");
+    try {
+      const res = await fetch(`/api/admin/usuarios/${usuario.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: form.nombre, rol: form.rol, activo: form.activo }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setApiError((d as { error?: string }).error ?? "Error al guardar.");
+        setSaving(false);
+        return;
+      }
+      onSaved();
+      onClose();
+    } catch {
+      setApiError("Error de conexión. Intenta de nuevo.");
+      setSaving(false);
+    }
+  }
 
   const inputBase = "w-full px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-sm text-on-surface focus:outline-none focus:ring-1 border-outline-variant focus:border-primary focus:ring-primary transition-colors";
   const labelBase = "text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block";
@@ -359,24 +393,21 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
             <label className={labelBase}>Nombre completo</label>
             <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className={inputBase} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelBase}>Matrícula / ID</label>
-              <input value={form.matricula} onChange={(e) => set("matricula", e.target.value)} className={inputBase} />
-            </div>
-            <div>
-              <label className={labelBase}>Rol</label>
-              <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={inputBase}>
-                <option value="Alumno">Alumno</option>
-                <option value="Maestro">Maestro</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-          </div>
           <div>
             <label className={labelBase}>Correo electrónico</label>
-            <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputBase} />
+            <input type="email" value={usuario.correo} disabled className={`${inputBase} opacity-60 cursor-not-allowed`} />
+            <p className="text-xs text-on-surface-variant mt-1">El correo no se puede cambiar desde aquí.</p>
           </div>
+          <div>
+            <label className={labelBase}>Rol</label>
+            <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={inputBase}>
+              <option value="alumno">Alumno</option>
+              <option value="maestro">Maestro</option>
+              <option value="admin">Admin</option>
+              <option value="padres">Padres</option>
+            </select>
+          </div>
+          {apiError && <p className="text-xs text-red-600">{apiError}</p>}
           <label className="flex items-center gap-3 cursor-pointer">
             <div
               onClick={() => set("activo", !form.activo)}
@@ -388,8 +419,8 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
           </label>
         </div>
         <div className="px-6 pb-5 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">Cancelar</button>
-          <button onClick={handleSave} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors">Guardar cambios</button>
+          <button onClick={onClose} disabled={saving} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">Cancelar</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">{saving ? "Guardando…" : "Guardar cambios"}</button>
         </div>
       </div>
     </div>
@@ -401,21 +432,44 @@ export default function UsuariosPage() {
   const [query, setQuery] = useState("");
   const [filtroRol, setFiltroRol] = useState<Rol>("Todos");
   const [showModal, setShowModal] = useState(false);
-  const [editando, setEditando] = useState<typeof usuariosIniciales[0] | null>(null);
-  const [usuarios, setUsuarios] = useState(usuariosIniciales);
+  const [editando, setEditando] = useState<ApiUsuario | null>(null);
+  const [usuarios, setUsuarios] = useState<ApiUsuario[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
+
+  async function cargarUsuarios() {
+    setLoading(true);
+    setApiError("");
+    try {
+      const params = new URLSearchParams({ limit: "100" });
+      if (filtroRol !== "Todos") params.set("rol", filtroRol.toLowerCase());
+      if (query) params.set("search", query);
+      const res = await fetch(`/api/admin/usuarios?${params}`);
+      if (!res.ok) throw new Error("Error al obtener usuarios");
+      const data = await res.json() as { usuarios: ApiUsuario[]; total: number };
+      setUsuarios(data.usuarios ?? []);
+      setTotal(data.total ?? 0);
+    } catch {
+      setApiError("No se pudo cargar la lista de usuarios.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { cargarUsuarios(); }, [filtroRol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtrados = usuarios.filter((u) => {
-    const coincideRol = filtroRol === "Todos" || u.rol === filtroRol;
-    const coincideBusqueda =
-      u.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      u.matricula.toLowerCase().includes(query.toLowerCase()) ||
-      u.email.toLowerCase().includes(query.toLowerCase());
-    return coincideRol && coincideBusqueda;
+    const q = query.toLowerCase();
+    return (
+      u.nombre.toLowerCase().includes(q) ||
+      u.correo.toLowerCase().includes(q)
+    );
   });
 
   return (
     <>
-      <DashboardTopbar userImageAlt="Administrador" userName="Mtra. Viderique" userRole="Administradora" activeTopLink="usuarios" showSearch linkBase={BASE} />
+      <DashboardTopbar userImageAlt="Administrador" activeTopLink="usuarios" showSearch linkBase={BASE} />
       <div className="flex pt-14">
         <DashboardSidebar activeLink="usuarios" headerVariant="school-icon" linkBase={BASE} />
         <main className="flex-1 md:ml-64 p-4 md:p-5 lg:p-6 max-w-[1280px] mx-auto w-full">
@@ -447,7 +501,8 @@ export default function UsuariosPage() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar por nombre, matrícula o correo..."
+                  onKeyDown={(e) => e.key === "Enter" && cargarUsuarios()}
+                  placeholder="Buscar por nombre o correo..."
                   className="w-full pl-9 pr-4 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -470,25 +525,36 @@ export default function UsuariosPage() {
 
             {/* Tabla */}
             <div className="overflow-x-auto">
+              {apiError && (
+                <p className="text-sm text-red-600 p-4">{apiError}</p>
+              )}
+              {loading ? (
+                <p className="text-sm text-on-surface-variant p-8 text-center">Cargando usuarios…</p>
+              ) : (
               <table className="w-full text-left text-sm min-w-[700px]">
                 <thead className="bg-surface-variant">
                   <tr>
-                    {["Nombre", "Rol", "Matrícula / ID", "Correo", "Estado", "Acciones"].map((h, i) => (
-                      <th key={h} className={`p-2 px-4 border-b border-outline-variant text-on-surface-variant uppercase tracking-wider text-xs font-semibold ${i === 5 ? "text-right" : ""}`}>
+                    {["Nombre", "Rol", "Correo", "Estado", "Acciones"].map((h, i) => (
+                      <th key={h} className={`p-2 px-4 border-b border-outline-variant text-on-surface-variant uppercase tracking-wider text-xs font-semibold ${i === 4 ? "text-right" : ""}`}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtrados.map((u) => (
+                  {filtrados.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-on-surface-variant text-sm">
+                        Sin resultados
+                      </td>
+                    </tr>
+                  ) : filtrados.map((u) => (
                     <tr key={u.id} className="odd:bg-surface even:bg-surface-bright hover:bg-surface-container-lowest transition-colors">
                       <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{u.nombre}</td>
                       <td className="p-2 px-4 border-b border-outline-variant">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${rolColors[u.rol]}`}>{u.rol}</span>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${rolColors[u.rol] ?? ""}`}>{u.rol}</span>
                       </td>
-                      <td className="p-2 px-4 border-b border-outline-variant font-mono text-on-surface-variant">{u.matricula}</td>
-                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{u.email}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{u.correo}</td>
                       <td className="p-2 px-4 border-b border-outline-variant">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${u.activo ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200" : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"}`}>
                           {!u.activo && (
@@ -508,22 +574,16 @@ export default function UsuariosPage() {
                             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                           </svg>
                         </button>
-                        {!u.activo && (
-                          <button className="text-on-surface-variant hover:text-blue-600 p-1 rounded" title="Reenviar correo de verificación">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                              <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                            </svg>
-                          </button>
-                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
 
             <div className="p-3 px-4 border-t border-outline-variant text-sm text-on-surface-variant">
-              Mostrando {filtrados.length} de {usuarios.length} usuarios
+              Mostrando {filtrados.length} de {total} usuarios
             </div>
           </div>
         </main>
@@ -532,7 +592,7 @@ export default function UsuariosPage() {
       {showModal && (
         <NuevoUsuarioModal
           onClose={() => setShowModal(false)}
-          onCreated={(u) => setUsuarios((prev) => [...prev, u])}
+          onCreated={() => { cargarUsuarios(); }}
         />
       )}
 
@@ -540,7 +600,7 @@ export default function UsuariosPage() {
         <ModalEditarUsuario
           usuario={editando}
           onClose={() => setEditando(null)}
-          onSaved={(u) => { setUsuarios((prev) => prev.map((x) => x.id === u.id ? u : x)); setEditando(null); }}
+          onSaved={() => { cargarUsuarios(); setEditando(null); }}
         />
       )}
     </>
