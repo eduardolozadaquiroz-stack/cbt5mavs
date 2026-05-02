@@ -13,7 +13,7 @@ export default function HeroSection() {
       <HeroCarousel slides={carousel} />
 
       {/* Contenido sobre el carrusel */}
-      <div className="relative z-10 max-w-container-max mx-auto px-8 py-24 md:py-32 flex flex-col md:w-2/3">
+      <div className="relative z-10 max-w-container-max mx-auto px-8 py-24 md:py-32 flex flex-col md:w-2/3 pointer-events-none">
         <span className="text-secondary-fixed font-label-bold text-label-bold uppercase tracking-widest mb-4 inline-block">
           {hero.subtitulo}
         </span>
@@ -23,7 +23,7 @@ export default function HeroSection() {
         <p className="font-body-base text-body-base text-surface-container-highest mb-10 max-w-xl">
           {hero.descripcion}
         </p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 pointer-events-auto">
           <a
             className="bg-on-primary text-primary px-6 py-3 rounded-lg font-label-bold text-label-bold hover:bg-surface-container-low transition-colors shadow-sm"
             href={hero.boton1Href}

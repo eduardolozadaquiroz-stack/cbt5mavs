@@ -56,6 +56,7 @@ function useSmartNavbar(threshold = 80) {
 export default function Navbar({ activePage }: NavbarProps) {
   const [sectionsConfig, setSectionsConfig] = useState<SectionsConfig>({});
   const [loading, setLoading] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navVisible = useSmartNavbar(80);
 
   useEffect(() => {
@@ -147,12 +148,45 @@ export default function Navbar({ activePage }: NavbarProps) {
         {/* Acciones — móvil */}
         <div className="md:hidden flex items-center gap-1">
           <ThemeToggle />
-          <button className="text-slate-600 dark:text-slate-400 p-1">
-            <span className="material-symbols-outlined">menu</span>
+          <button
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+            className="text-slate-600 dark:text-slate-400 p-1"
+          >
+            <span className="material-symbols-outlined">{mobileOpen ? "close" : "menu"}</span>
           </button>
         </div>
 
       </div>
+
+      {/* Menú móvil desplegable */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-[#d8e2f0] dark:border-slate-800 bg-[#eef2f8] dark:bg-slate-950 px-4 pb-4">
+          <nav className="flex flex-col gap-1 pt-2">
+            {filteredNavLinks.map(({ label, page, href }) => (
+              <a
+                key={page}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activePage === page
+                    ? "text-blue-700 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/30"
+                    : "text-slate-700 dark:text-slate-300 hover:bg-[#e4eaf3] dark:hover:bg-slate-900"
+                }`}
+              >
+                {label}
+              </a>
+            ))}
+            <a
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className="mt-2 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+            >
+              Portal Escolar
+            </a>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

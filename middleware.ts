@@ -57,7 +57,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       "img-src 'self' data: blob: https:",
       // Solo conexiones a Supabase y mismo origen
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-      "frame-src 'none'",
+      "frame-src https://www.google.com https://maps.google.com",
       "frame-ancestors 'none'",     // bloquea clickjacking
       "object-src 'none'",
       "base-uri 'self'",
