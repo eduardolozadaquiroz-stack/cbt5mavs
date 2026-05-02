@@ -39,7 +39,32 @@ jobs:
           cp -r .open-next/middleware .open-next/pages-dist/
           cp -r .open-next/.build .open-next/pages-dist/
           cp -r .open-next/server-functions .open-next/pages-dist/
-          cp .open-next/worker.js .open-next/pages-dist/_worker.js
+          # Crear _worker.js con proxy /api/* → Render + lógica opennext
+          cat > .open-next/pages-dist/_worker.js << 'WORKEREOF'
+const RENDER_BACKEND = "https://cbt5mavs.onrender.com";
+WORKEREOF
+          cat .open-next/worker.js >> .open-next/pages-dist/_worker.js
+          # Patch: reemplazar "export default {" con proxy antes del fetch handler
+          sed -i 's|export default {|const _opennextHandler = {|' .open-next/pages-dist/_worker.js
+          cat >> .open-next/pages-dist/_worker.js << 'WORKEREOF'
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/api/")) {
+      const renderUrl = RENDER_BACKEND + url.pathname + url.search;
+      const proxyReq = new Request(renderUrl, {
+        method: request.method,
+        headers: request.headers,
+        body: request.method !== "GET" && request.method !== "HEAD" ? request.body : undefined,
+        redirect: "follow",
+      });
+      return fetch(proxyReq);
+    }
+    return _opennextHandler.fetch(request, env, ctx);
+  },
+};
+WORKEREOF
           cat > .open-next/pages-dist/_routes.json << 'EOF'
           {
             "version": 1,
