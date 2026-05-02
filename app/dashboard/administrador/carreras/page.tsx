@@ -43,28 +43,16 @@ function CarreraImageUpload({
     e.target.value = "";
   }
 
-  const inputBase =
-    "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
-
   return (
     <>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://... o sube desde tu dispositivo"
-          className={inputBase}
-        />
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-          className="flex-shrink-0 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          {uploading ? "Subiendo..." : "📁 Subir"}
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => fileRef.current?.click()}
+        className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 text-left"
+      >
+        {uploading ? "⏳ Subiendo..." : value ? "📁 Cambiar imagen" : "📁 Subir imagen"}
+      </button>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       {value && (
         <div className="mt-2 rounded-lg overflow-hidden h-40 bg-slate-100 dark:bg-slate-800">
@@ -225,7 +213,7 @@ export default function CarrerasEditPage() {
 
                     {/* Imagen */}
                     <div>
-                      <label className={labelBase}>URL de la imagen</label>
+                      <label className={labelBase}>Imagen de la carrera</label>
                       <CarreraImageUpload
                         value={carrera.imageSrc}
                         alt={carrera.imageAlt}

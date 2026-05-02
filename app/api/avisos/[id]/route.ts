@@ -28,7 +28,7 @@ export async function GET(
     .from("avisos")
     .select("*")
     .eq("id", id)
-    .eq("activo", true)
+    .eq("estado", "publicado")
     .single();
 
   if (error || !data) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -64,13 +64,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 
-  const updates: Record<string, string | boolean | null> = {};
+  const updates: Record<string, string | boolean | string[] | null> = {};
   if (typeof body.titulo === "string") updates.titulo = sanitize(body.titulo, 200);
-  if (typeof body.cuerpo === "string") updates.cuerpo = sanitize(body.cuerpo, 4000);
+  if (typeof body.cuerpo === "string") updates.contenido = sanitize(body.cuerpo, 4000);
   if (typeof body.tipo === "string") updates.tipo = sanitize(body.tipo, 50);
-  if (typeof body.firmado === "string") updates.firmado = sanitize(body.firmado, 200);
-  if (typeof body.imagen_url === "string") updates.imagen_url = sanitize(body.imagen_url, 500);
-  if (typeof body.activo === "boolean") updates.activo = body.activo;
+  if (typeof body.imagen_url === "string") {
+    const url = sanitize(body.imagen_url, 500);
+    updates.fotos = url ? [url] : [];
+  }
+  if (typeof body.activo === "boolean") updates.estado = body.activo ? "publicado" : "borrador";
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Sin cambios" }, { status: 400 });
@@ -106,7 +108,7 @@ export async function DELETE(
   }
 
   // Soft delete
-  const { error } = await admin.from("avisos").update({ activo: false }).eq("id", id);
+  const { error } = await admin.from("avisos").update({ estado: "archivado" }).eq("id", id);
   if (error) return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
 
   return NextResponse.json({ ok: true });

@@ -108,27 +108,35 @@ export async function POST(request: NextRequest) {
 
   // Si es alumno, crear registro en tabla alumnos
   if (rol === "alumno") {
-    const matricula = sanitize(body.matricula ?? "", 20);
+    const matricula  = sanitize(body.matricula ?? "", 20);
     const carrera_id = typeof body.carrera_id === "string" ? body.carrera_id.trim() : null;
+    // Solo insertar si se proporciona matrícula; curp y fecha_nacimiento son requeridos
+    // por el schema pero se omiten en creación rápida — se completan en edición posterior
     if (matricula) {
-      await admin.from("alumnos").insert({
-        usuario_id: dbUser.id,
+      const { error: alumnoError } = await admin.from("alumnos").insert({
+        id: dbUser.id,
         matricula,
         carrera_id,
-        semestre: 1,
+        semestre_actual: 1,
+        curp: `CBT-${dbUser.id.slice(0, 8).toUpperCase()}`,
+        fecha_nacimiento: "2000-01-01",
       });
+      if (alumnoError) {
+        console.error("[usuarios POST] alumnos insert warning:", alumnoError.code, alumnoError.message);
+      }
     }
   }
 
   // Si es maestro, crear registro en tabla maestros
   if (rol === "maestro") {
-    const especialidad   = sanitize(body.especialidad ?? "", 100);
-    const clave_empleado = sanitize(body.clave_empleado ?? "", 30);
-    await admin.from("maestros").insert({
-      usuario_id: dbUser.id,
+    const especialidad = sanitize(body.especialidad ?? "", 100);
+    const { error: maestroError } = await admin.from("maestros").insert({
+      id: dbUser.id,
       especialidad: especialidad || null,
-      clave_empleado: clave_empleado || null,
     });
+    if (maestroError) {
+      console.error("[usuarios POST] maestros insert warning:", maestroError.code, maestroError.message);
+    }
   }
 
   // A09 – Audit log: creación de cuentas es evento crítico

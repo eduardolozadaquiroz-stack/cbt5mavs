@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("avisos")
-    .select("id, titulo, cuerpo, tipo, firmado, fecha_publicacion, activo, imagen_url", { count: "exact" })
+    .select("id, titulo, contenido, tipo, estado, fotos, fecha_publicacion, autor_id", { count: "exact" })
     .order("fecha_publicacion", { ascending: false })
     .range(from, to);
 
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
     // Solo admins/maestros autenticados pueden ver todos los avisos (incluyendo inactivos)
     const user = await getAuthUser();
     if (!user || (user.rol !== "admin" && user.rol !== "maestro")) {
-      query = query.eq("activo", true);
+      query = query.eq("estado", "publicado");
     }
   } else {
-    query = query.eq("activo", true);
+    query = query.eq("estado", "publicado");
   }
 
   if (tipo) query = query.eq("tipo", tipo);
@@ -38,7 +38,20 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: "Error al obtener avisos" }, { status: 500 });
 
-  return NextResponse.json({ avisos: data ?? [], total: count ?? 0, page, limit });
+  // Mapear columnas del schema al shape esperado por el frontend
+  const avisos = (data ?? []).map((a) => ({
+    id: a.id,
+    titulo: a.titulo,
+    cuerpo: a.contenido,
+    tipo: a.tipo,
+    firmado: null as string | null,
+    activo: a.estado === "publicado",
+    imagen_url: (a.fotos as string[])?.[0] ?? null,
+    fecha_publicacion: a.fecha_publicacion,
+    autor_id: a.autor_id,
+  }));
+
+  return NextResponse.json({ avisos, total: count ?? 0, page, limit });
 }
 
 export async function POST(request: NextRequest) {
@@ -53,8 +66,8 @@ export async function POST(request: NextRequest) {
   const titulo     = sanitize(body.titulo as string, 200);
   const cuerpo     = sanitize(body.cuerpo as string, 4000);
   const tipo       = sanitize(body.tipo as string, 50);
-  const firmado    = sanitize(body.firmado as string, 200);
   const imagen_url = sanitize(body.imagen_url as string, 500);
+  const activoRaw  = body.activo !== false; // default true
 
   if (!titulo || !cuerpo || !tipo) {
     return NextResponse.json({ error: "titulo, cuerpo y tipo son requeridos" }, { status: 400 });
@@ -70,12 +83,11 @@ export async function POST(request: NextRequest) {
     .from("avisos")
     .insert({
       titulo,
-      cuerpo,
+      contenido: cuerpo,
       tipo,
-      firmado: firmado || null,
-      imagen_url: imagen_url || null,
+      fotos: imagen_url ? [imagen_url] : [],
       autor_id: user.db_id,
-      activo: true,
+      estado: activoRaw ? "publicado" : "borrador",
     })
     .select("id")
     .single();
