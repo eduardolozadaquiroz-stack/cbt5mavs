@@ -113,7 +113,11 @@ export async function POST(request: NextRequest) {
     });
 
   if (uploadError) {
-    return NextResponse.json({ error: "Error al subir el archivo" }, { status: 500 });
+    console.error("[storage/upload] Supabase storage error:", uploadError.message, "status:", (uploadError as {statusCode?: number}).statusCode);
+    return NextResponse.json(
+      { error: uploadError.message ?? "Error al subir el archivo" },
+      { status: 500 }
+    );
   }
 
   const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);

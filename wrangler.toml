@@ -1,8 +1,7 @@
 name = "cbt5mavs"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
-main = ".open-next/worker.js"
-assets = { directory = ".open-next/assets" }
+pages_build_output_dir = ".open-next/assets"
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
-# SUPABASE_SERVICE_ROLE_KEY se sube como secret vía el workflow de CI/CD (wrangler secret put)
+# SUPABASE_SERVICE_ROLE_KEY se sube como secret vía: wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY

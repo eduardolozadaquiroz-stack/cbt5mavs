@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "opennextjs-cloudflare build",
-    "deploy:cf": "opennextjs-cloudflare build && wrangler deploy",
+    "build:cf": "opennextjs-cloudflare build && node -e \"const{cpSync,mkdirSync}=require('fs');['cloudflare','middleware','.build','server-functions'].forEach(d=>{try{cpSync('.open-next/'+d,'.open-next/pages-dist/'+d,{recursive:true})}catch{}});require('fs').copyFileSync('.open-next/worker.js','.open-next/pages-dist/_worker.js');\"",
+    "deploy:cf": "npm run build:cf && wrangler pages deploy .open-next/pages-dist --project-name cbt5mavs --branch main --commit-dirty=true",
     "start": "next start",
     "lint": "next lint"
   },
