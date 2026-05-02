@@ -134,11 +134,23 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Verificar que el rol del usuario coincide con lo solicitado ────────────
-  // Usamos el admin client (service role) para leer usuarios porque en
-  // Cloudflare Workers las cookies de sesión no se propagan en la misma
-  // request, lo que haría que RLS bloqueara la consulta con el anon client.
-  const adminDb = createSupabaseAdminClient();
-  const { data: dbUser, error: dbError } = await adminDb
+  // Usamos el access_token recién obtenido de signInWithPassword para crear
+  // un cliente autenticado. Esto evita depender del service role key en runtime
+  // y funciona correctamente con RLS en Cloudflare Workers.
+  const { createClient: createBrowserClient } = await import("@supabase/supabase-js");
+  const authedDb = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${authData.session!.access_token}`,
+        },
+      },
+      auth: { autoRefreshToken: false, persistSession: false },
+    }
+  );
+  const { data: dbUser, error: dbError } = await authedDb
     .from("usuarios")
     .select("id, rol, activo, primer_acceso")
     .eq("auth_id", authData.user.id)
