@@ -24,6 +24,8 @@ export default function AdmisionEditPage() {
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     updateAdmision(form);
+    // Sincronizar visibilidad en navbar con el estado habilitada del formulario
+    updateSectionEnabled("admision", form.habilitada);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }

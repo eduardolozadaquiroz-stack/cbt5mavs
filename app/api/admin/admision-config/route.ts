@@ -45,8 +45,21 @@ export async function GET() {
       .eq("id", 1)
       .single();
 
-    const sections =
-      (data?.config as Record<string, unknown>)?.secciones ?? DEFAULT_SECTIONS;
+    const config = data?.config as Record<string, unknown> | undefined;
+    const secciones = (config?.secciones ?? {}) as Record<string, { enabled: boolean }>;
+
+    // Si la sección admision no tiene estado explícito en secciones,
+    // usar config.admision.habilitada como fuente de verdad
+    const admisionEnabled =
+      secciones?.admision?.enabled !== undefined
+        ? secciones.admision.enabled
+        : ((config?.admision as Record<string, unknown>)?.habilitada as boolean ?? true);
+
+    const sections = {
+      ...DEFAULT_SECTIONS,
+      ...secciones,
+      admision: { enabled: admisionEnabled },
+    };
 
     return NextResponse.json(sections);
   } catch {
