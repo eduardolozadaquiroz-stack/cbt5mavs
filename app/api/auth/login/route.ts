@@ -8,7 +8,7 @@
  * - A01 (Access Control): verifica rol del usuario contra la tabla usuarios
  */
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase-server";
 import { loginLimiter } from "@/lib/rate-limit";
 import { createLogger } from "@/lib/logger";
 
@@ -134,8 +134,11 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Verificar que el rol del usuario coincide con lo solicitado ────────────
-  // Previene que un alumno intente acceder al dashboard de admin
-  const { data: dbUser, error: dbError } = await supabase
+  // Usamos el admin client (service role) para leer usuarios porque en
+  // Cloudflare Workers las cookies de sesión no se propagan en la misma
+  // request, lo que haría que RLS bloqueara la consulta con el anon client.
+  const adminDb = createSupabaseAdminClient();
+  const { data: dbUser, error: dbError } = await adminDb
     .from("usuarios")
     .select("id, rol, activo, primer_acceso")
     .eq("auth_id", authData.user.id)
