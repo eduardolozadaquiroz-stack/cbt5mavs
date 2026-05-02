@@ -9,19 +9,29 @@ import { sanitize, isSafeImageUrl } from "@/lib/validate";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const page  = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "10", 10));
-  const tipo  = sanitize(searchParams.get("tipo") ?? "", 50);
-  const from  = (page - 1) * limit;
-  const to    = from + limit - 1;
+  const page    = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit   = Math.min(50, parseInt(searchParams.get("limit") ?? "10", 10));
+  const tipo    = sanitize(searchParams.get("tipo") ?? "", 50);
+  const showAll = searchParams.get("all") === "1";
+  const from    = (page - 1) * limit;
+  const to      = from + limit - 1;
 
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("avisos")
     .select("id, titulo, cuerpo, tipo, firmado, fecha_publicacion, activo, imagen_url", { count: "exact" })
-    .eq("activo", true)
     .order("fecha_publicacion", { ascending: false })
     .range(from, to);
+
+  if (showAll) {
+    // Solo admins/maestros autenticados pueden ver todos los avisos (incluyendo inactivos)
+    const user = await getAuthUser();
+    if (!user || (user.rol !== "admin" && user.rol !== "maestro")) {
+      query = query.eq("activo", true);
+    }
+  } else {
+    query = query.eq("activo", true);
+  }
 
   if (tipo) query = query.eq("tipo", tipo);
 

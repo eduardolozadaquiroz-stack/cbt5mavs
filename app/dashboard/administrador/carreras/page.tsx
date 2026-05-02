@@ -1,12 +1,85 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 import type { CarrerasConfig, CarreraConfig } from "@/app/context/AdminConfigContext";
 
+async function uploadSitePhoto(file: File): Promise<string | null> {
+  const fd = new FormData();
+  fd.append("bucket", "site");
+  fd.append("file", file);
+  try {
+    const r = await fetch("/api/storage/upload", { method: "POST", body: fd });
+    const d = await r.json();
+    return d.ok ? (d.url as string) : null;
+  } catch {
+    return null;
+  }
+}
+
 const BASE = "/dashboard/administrador";
+
+function CarreraImageUpload({
+  value,
+  alt,
+  onChange,
+}: {
+  value: string;
+  alt: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const url = await uploadSitePhoto(file);
+    if (url) onChange(url);
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  const inputBase =
+    "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
+
+  return (
+    <>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://... o sube desde tu dispositivo"
+          className={inputBase}
+        />
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+          className="flex-shrink-0 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {uploading ? "Subiendo..." : "📁 Subir"}
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      {value && (
+        <div className="mt-2 rounded-lg overflow-hidden h-40 bg-slate-100 dark:bg-slate-800">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={value}
+            alt={alt}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function CarrerasEditPage() {
   const { config, updateCarreras } = useAdminConfig();
@@ -153,24 +226,11 @@ export default function CarrerasEditPage() {
                     {/* Imagen */}
                     <div>
                       <label className={labelBase}>URL de la imagen</label>
-                      <input
-                        type="url"
+                      <CarreraImageUpload
                         value={carrera.imageSrc}
-                        onChange={(e) => setCarreraField(idx, "imageSrc", e.target.value)}
-                        className={inputBase}
-                        placeholder="https://..."
+                        alt={carrera.imageAlt}
+                        onChange={(v) => setCarreraField(idx, "imageSrc", v)}
                       />
-                      {carrera.imageSrc && (
-                        <div className="mt-2 rounded-lg overflow-hidden h-40 bg-slate-100 dark:bg-slate-800">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={carrera.imageSrc}
-                            alt={carrera.imageAlt}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          />
-                        </div>
-                      )}
                     </div>
 
                     {/* Título */}

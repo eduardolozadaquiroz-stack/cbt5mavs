@@ -92,7 +92,18 @@ export async function POST(request: NextRequest) {
   if (dbError) {
     // Rollback: eliminar la cuenta auth creada
     await admin.auth.admin.deleteUser(authData.user.id);
-    return NextResponse.json({ error: "Error al crear usuario en la base de datos" }, { status: 500 });
+    // Determinar causa probable
+    let msg = "Error al crear usuario en la base de datos";
+    if (dbError.code === "23505") {
+      // Unique violation
+      if (dbError.message?.includes("correo")) msg = "El correo ya existe en el sistema";
+      else if (dbError.message?.includes("auth_id")) msg = "Ya existe un usuario con esa cuenta de autenticación";
+      else msg = "Ya existe un registro duplicado";
+    } else if (dbError.code === "23503") {
+      msg = "Error de referencia: verifique que los datos relacionados existan";
+    }
+    console.error("[usuarios POST] DB error:", dbError.code, dbError.message);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
   // Si es alumno, crear registro en tabla alumnos
