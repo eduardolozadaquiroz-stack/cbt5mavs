@@ -91,10 +91,7 @@ export default function DashboardAdministradorPage() {
               <div className="relative z-10">
                 <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">{loadingUsuarios ? "…" : totalUsuarios.toLocaleString()}</span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-green-600">
-                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-                  </svg>
-                  +2.4% vs semestre anterior
+                  Total de usuarios registrados
                 </span>
               </div>
             </div>
@@ -111,9 +108,9 @@ export default function DashboardAdministradorPage() {
                 </div>
               </div>
               <div className="relative z-10">
-                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">85.8%</span>
+                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">—</span>
                 <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-secondary h-1.5 rounded-full" style={{ width: "85.8%" }} />
+                  <div className="bg-secondary h-1.5 rounded-full" style={{ width: "0%" }} />
                 </div>
               </div>
             </div>
@@ -129,9 +126,9 @@ export default function DashboardAdministradorPage() {
                 </div>
               </div>
               <div className="relative z-10">
-                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">14.2%</span>
+                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 block">—</span>
                 <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-red-500 h-1.5 rounded-full" style={{ width: "14.2%" }} />
+                  <div className="bg-red-500 h-1.5 rounded-full" style={{ width: "0%" }} />
                 </div>
               </div>
             </div>
@@ -147,8 +144,8 @@ export default function DashboardAdministradorPage() {
                 </div>
               </div>
               <div className="relative z-10">
-                <span className="text-2xl font-bold text-red-600 block">87</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant mt-1 block">Requiere intervención inmediata</span>
+                <span className="text-2xl font-bold text-red-600 block">—</span>
+                <span className="font-body-sm text-body-sm text-on-surface-variant mt-1 block">Sin datos por ahora</span>
               </div>
             </div>
           </div>
@@ -156,27 +153,17 @@ export default function DashboardAdministradorPage() {
           {/* Gráficas + Tabla */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-10">
 
-            {/* Reprobación por carrera */}
+            {/* Reprobación por carrera — sin datos todavía */}
             <div className="lg:col-span-1 bg-surface border border-outline-variant rounded-lg shadow-sm flex flex-col">
-              <div className="p-4 border-b border-outline-variant flex justify-between items-center">
+              <div className="p-4 border-b border-outline-variant">
                 <h3 className="font-title-sm text-title-sm text-on-surface">Reprobación por Carrera</h3>
               </div>
-              <div className="p-4 flex-1 flex flex-col justify-center gap-4">
-                {[
-                  { carrera: "Informática",     pct: "18.5%", w: "75%",  color: "bg-primary" },
-                  { carrera: "Gastronomía",      pct: "12.1%", w: "50%",  color: "bg-blue-400" },
-                  { carrera: "Diseño Asistido",  pct: "8.4%",  w: "35%",  color: "bg-slate-400" },
-                ].map((r) => (
-                  <div key={r.carrera}>
-                    <div className="flex justify-between text-sm mb-1 text-on-surface-variant">
-                      <span>{r.carrera}</span>
-                      <span className="font-medium">{r.pct}</span>
-                    </div>
-                    <div className="w-full bg-surface-container rounded-full h-2">
-                      <div className={`${r.color} h-2 rounded-full`} style={{ width: r.w }} />
-                    </div>
-                  </div>
-                ))}
+              <div className="p-6 flex-1 flex flex-col items-center justify-center gap-2 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 text-outline">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+                <p className="text-sm text-on-surface-variant">Sin datos de calificaciones aún</p>
+                <p className="text-xs text-on-surface-variant opacity-60">Las estadísticas aparecen una vez que se registren calificaciones</p>
               </div>
             </div>
 

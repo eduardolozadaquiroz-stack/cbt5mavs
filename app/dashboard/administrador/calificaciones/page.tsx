@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 const BASE = "/dashboard/administrador";
 
-type Carrera = "Todas" | "Gastronomía" | "Informática" | "Diseño Asistido";
-
-const calificaciones = [
-  { id: "230145", nombre: "Hernandez Garcia, María",  carrera: "Gastronomía",    materia: "Técnicas Culinarias", periodo: "2024-1", calif: 9.2 },
-  { id: "230188", nombre: "López Silva, Carlos",       carrera: "Informática",     materia: "Programación I",      periodo: "2024-1", calif: 5.8 },
-  { id: "220041", nombre: "Ramírez Ruiz, Ana",         carrera: "Diseño Asistido", materia: "AutoCAD Básico",      periodo: "2024-1", calif: 4.5 },
-  { id: "230205", nombre: "Torres Vega, Diego",        carrera: "Informática",     materia: "Redes I",             periodo: "2024-1", calif: 8.7 },
-  { id: "230112", nombre: "Vargas Soto, Elena",        carrera: "Gastronomía",     materia: "Nutrición Básica",    periodo: "2024-1", calif: 6.1 },
-];
+interface Calificacion {
+  id: string;
+  parcial: number;
+  calificacion: number;
+  fecha_registro: string;
+  alumno: { id: string; matricula: string; usuarios: { nombre: string } };
+  materia: { id: string; nombre: string; clave: string };
+  grupo: { id: string; nombre: string; semestre: number; carrera: { nombre: string } };
+}
 
 function getCalifClass(c: number) {
   if (c >= 8) return "text-green-700 dark:text-green-300 font-semibold";
@@ -23,18 +23,34 @@ function getCalifClass(c: number) {
 }
 
 export default function CalificacionesPage() {
+  const [cals, setCals] = useState<Calificacion[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [carrera, setCarrera] = useState<Carrera>("Todas");
+  const [carreraFiltro, setCarreraFiltro] = useState("Todas");
 
-  const filtrados = calificaciones.filter((c) => {
-    const ok = carrera === "Todas" || c.carrera === carrera;
+  useEffect(() => {
+    fetch("/api/calificaciones")
+      .then((r) => r.json())
+      .then((d) => setCals(d.calificaciones ?? []))
+      .catch(() => setCals([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const carreras = ["Todas", ...Array.from(new Set(cals.map((c) => c.grupo.carrera.nombre)))];
+
+  const filtrados = cals.filter((c) => {
+    const okCarrera = carreraFiltro === "Todas" || c.grupo.carrera.nombre === carreraFiltro;
     const q = query.toLowerCase();
-    return ok && (c.nombre.toLowerCase().includes(q) || c.id.includes(q) || c.materia.toLowerCase().includes(q));
+    return okCarrera && (
+      c.alumno.usuarios.nombre.toLowerCase().includes(q) ||
+      c.alumno.matricula.toLowerCase().includes(q) ||
+      c.materia.nombre.toLowerCase().includes(q)
+    );
   });
 
   return (
     <>
-      <DashboardTopbar userImageAlt="Administrador" userName="Mtra. Viderique" userRole="Administradora" activeTopLink="calificaciones" showSearch linkBase={BASE} />
+      <DashboardTopbar userImageAlt="Administrador" activeTopLink="calificaciones" showSearch linkBase={BASE} />
       <div className="flex pt-14">
         <DashboardSidebar activeLink="calificaciones" headerVariant="school-icon" linkBase={BASE} />
         <main className="flex-1 md:ml-64 p-4 md:p-5 lg:p-6 max-w-[1280px] mx-auto w-full">
@@ -53,8 +69,8 @@ export default function CalificacionesPage() {
                 <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar alumno, matrícula o materia..." className="w-full pl-9 pr-4 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
               </div>
               <div className="flex gap-2 flex-wrap">
-                {(["Todas", "Gastronomía", "Informática", "Diseño Asistido"] as Carrera[]).map((c) => (
-                  <button key={c} onClick={() => setCarrera(c)} className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${carrera === c ? "bg-primary text-on-primary border-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-variant"}`}>{c}</button>
+                {carreras.map((c) => (
+                  <button key={c} onClick={() => setCarreraFiltro(c)} className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${carreraFiltro === c ? "bg-primary text-on-primary border-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-variant"}`}>{c}</button>
                 ))}
               </div>
             </div>
@@ -63,29 +79,34 @@ export default function CalificacionesPage() {
               <table className="w-full text-left text-sm min-w-[680px]">
                 <thead className="bg-surface-variant">
                   <tr>
-                    {["Matrícula", "Alumno", "Carrera", "Materia", "Periodo", "Calificación"].map((h) => (
+                    {["Alumno", "Matrícula", "Carrera", "Materia", "Parcial", "Calificación"].map((h) => (
                       <th key={h} className="p-2 px-4 border-b border-outline-variant text-on-surface-variant uppercase tracking-wider text-xs font-semibold">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtrados.map((r) => (
-                    <tr key={`${r.id}-${r.materia}`} className="odd:bg-surface even:bg-surface-bright hover:bg-surface-container-lowest transition-colors">
-                      <td className="p-2 px-4 border-b border-outline-variant font-mono text-on-surface-variant">{r.id}</td>
-                      <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{r.nombre}</td>
-                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.carrera}</td>
-                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.materia}</td>
-                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.periodo}</td>
-                      <td className={`p-2 px-4 border-b border-outline-variant text-lg ${getCalifClass(r.calif)}`}>{r.calif.toFixed(1)}</td>
+                  {loading && (
+                    <tr><td colSpan={6} className="text-center py-8 text-on-surface-variant">Cargando...</td></tr>
+                  )}
+                  {!loading && filtrados.map((r) => (
+                    <tr key={r.id} className="odd:bg-surface even:bg-surface-bright hover:bg-surface-container-lowest transition-colors">
+                      <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{r.alumno.usuarios.nombre}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant font-mono text-on-surface-variant">{r.alumno.matricula}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.grupo.carrera.nombre}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.materia.nombre}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant text-on-surface-variant">{r.parcial}°</td>
+                      <td className={`p-2 px-4 border-b border-outline-variant text-lg ${getCalifClass(r.calificacion)}`}>{r.calificacion.toFixed(1)}</td>
                     </tr>
                   ))}
-                  {filtrados.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-8 text-on-surface-variant">Sin resultados</td></tr>
+                  {!loading && filtrados.length === 0 && (
+                    <tr><td colSpan={6} className="text-center py-8 text-on-surface-variant">Sin registros de calificaciones</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
-            <div className="p-3 px-4 border-t border-outline-variant text-sm text-on-surface-variant">Mostrando {filtrados.length} de {calificaciones.length} registros</div>
+            <div className="p-3 px-4 border-t border-outline-variant text-sm text-on-surface-variant">
+              {loading ? "Cargando..." : `Mostrando ${filtrados.length} de ${cals.length} registros`}
+            </div>
           </div>
         </main>
       </div>

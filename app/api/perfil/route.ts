@@ -25,6 +25,9 @@ export async function GET(_request: NextRequest) {
 
   if (error || !data) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
+  // Si correo está vacío en la tabla, usar el email de auth como fallback
+  const correo = data.correo || user.email || null;
+
   // Datos extra por rol
   let extra: Record<string, unknown> = {};
 
@@ -44,7 +47,7 @@ export async function GET(_request: NextRequest) {
     if (mae) extra = { maestro: mae };
   }
 
-  return NextResponse.json({ ...data, ...extra });
+  return NextResponse.json({ ...data, correo, ...extra });
 }
 
 export async function PATCH(request: NextRequest) {

@@ -19,7 +19,7 @@ interface PerfilData {
 
 export default function PerfilPage() {
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
-  const [form, setForm] = useState({ nombre: "", telefono: "" });
+  const [form, setForm] = useState({ nombre: "", telefono: "", cargo: "", especialidad: "" });
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +33,13 @@ export default function PerfilPage() {
       .then((r) => r.json())
       .then((data: PerfilData) => {
         setPerfil(data);
-        setForm({ nombre: data.nombre ?? "", telefono: data.telefono ?? "" });
+        const rolLabel: Record<string, string> = { admin: "Administrador/a", maestro: "Maestro/a", alumno: "Alumno", padres: "Padre/Tutor" };
+        setForm({
+          nombre: data.nombre ?? "",
+          telefono: data.telefono ?? "",
+          cargo: rolLabel[data.rol] ?? data.rol,
+          especialidad: (data as Record<string, unknown>).maestro ? ((data as Record<string, unknown>).maestro as Record<string, unknown>)?.especialidad as string ?? "" : "",
+        });
         setImgSrc(data.foto_url ?? null);
       })
       .catch(() => setError("No se pudo cargar el perfil"))
@@ -207,6 +213,24 @@ export default function PerfilPage() {
                         placeholder="55 1234 5678"
                       />
                     </div>
+                    <div>
+                      <label className={labelBase}>Cargo</label>
+                      <input
+                        value={form.cargo}
+                        readOnly
+                        className={`${inputBase} opacity-60 cursor-not-allowed`}
+                        title="El cargo se deriva del rol asignado"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelBase}>Carrera / Especialidad</label>
+                      <input
+                        value={form.especialidad}
+                        onChange={(e) => setForm((f) => ({ ...f, especialidad: e.target.value }))}
+                        className={inputBase}
+                        placeholder="Ej. Administración Educativa"
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-5 flex justify-end">
@@ -225,9 +249,12 @@ export default function PerfilPage() {
                   <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">Información de sesión</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     {[
-                      { label: "Rol",          val: perfil?.rol ?? "—" },
-                      { label: "Correo",       val: perfil?.correo ?? "—" },
-                      { label: "Miembro desde", val: perfil?.created_at ? new Date(perfil.created_at).toLocaleDateString("es-MX") : "—" },
+                      { label: "Rol",            val: perfil?.rol ?? "—" },
+                      { label: "Correo",          val: perfil?.correo ?? "—" },
+                      { label: "Miembro desde",   val: perfil?.created_at ? new Date(perfil.created_at).toLocaleDateString("es-MX") : "—" },
+                      { label: "Ciclo activo",    val: "2025-2026" },
+                      { label: "Institución",     val: "CBT Núm. 5, Chalco" },
+                      { label: "Sistema",         val: "v1.0.0" },
                     ].map(({ label, val }) => (
                       <div key={label} className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2.5">
                         <p className="text-slate-400 mb-0.5">{label}</p>
