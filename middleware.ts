@@ -138,8 +138,10 @@ export async function middleware(request: NextRequest) {
   // ── 3. Red de seguridad: APIs siempre protegidas ─────────────────────────────
   //    Independientemente de que cada handler tenga su requireAuth(),
   //    el middleware rechaza aquí antes de ejecutar el handler (defensa en profundidad).
+  //    EXCEPCIÓN: rutas en PUBLIC_API_PATHS son accesibles sin sesión (GET).
   const isAlwaysProtected = PROTECTED_API_ALWAYS.some((re) => re.test(pathname));
-  if (isAlwaysProtected && !user) {
+  const isPublicApi = PUBLIC_API_PATHS.some((re) => re.test(pathname));
+  if (isAlwaysProtected && !isPublicApi && !user) {
     return applySecurityHeaders(
       NextResponse.json({ error: "No autorizado" }, { status: 401 }),
       nonce
