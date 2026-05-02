@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       curp,
       fecha_nacimiento,
       usuario_id,
-      usuarios!inner(nombre, correo),
+      usuarios!inner(nombre, correo:email),
       carrera:carreras(nombre)
     `)
     .eq("matricula", matricula)

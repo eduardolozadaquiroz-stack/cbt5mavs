@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const admin = createSupabaseAdminClient();
   let query = admin
     .from("usuarios")
-    .select("id, nombre, correo, rol, telefono, activo, created_at", { count: "exact" })
+    .select("id, nombre, correo:email, rol, telefono, activo, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     .insert({
       auth_id: authData.user.id,
       nombre,
-      correo,
+      email: correo,
       rol,
       telefono: telefono || null,
       activo: true,

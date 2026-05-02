@@ -29,7 +29,7 @@ export async function GET(
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("usuarios")
-    .select("id, nombre, correo, rol, telefono, foto_url, activo, created_at")
+    .select("id, nombre, correo:email, rol, telefono, foto_url, activo, created_at")
     .eq("id", id)
     .single();
 

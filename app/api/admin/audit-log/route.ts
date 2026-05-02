@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     .from("audit_log")
     .select(`
       id, accion, tabla, registro_id, datos_anteriores, datos_nuevos, created_at,
-      usuario:usuarios(nombre, correo, rol)
+      usuario:usuarios(nombre, correo:email, rol)
     `, { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
