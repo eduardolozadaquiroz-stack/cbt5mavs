@@ -31,8 +31,6 @@ export async function GET() {
 
 // POST — solo administradores autenticados
 export async function POST(req: NextRequest) {
-  try {
-  // Doble verificación: middleware + validación de rol en DB
   const [, authErr] = await requireRole("admin");
   if (authErr) return authErr;
 
@@ -58,15 +56,8 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error("[site_config] Error al guardar:", error.message);
-    return NextResponse.json(
-      { error: "Error interno al guardar", _debug: { code: error.code, msg: error.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error interno al guardar" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: "Excepción no controlada", _debug: msg }, { status: 500 });
-  }
 }

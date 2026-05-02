@@ -24,7 +24,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     const supabase = await createSupabaseServerClient();
 
-    // getUser() verifica el token en el servidor (no solo decodifica el JWT local)
+    // getUser() verifica el token contra Supabase Auth (no decodifica JWT local)
     const {
       data: { user },
       error,
@@ -32,8 +32,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
     if (error || !user) return null;
 
-    // Obtener rol e id interno desde la tabla usuarios
-    const { data: dbUser, error: dbError } = await supabase
+    // Usamos el admin client para leer usuarios — evita que problemas de
+    // GRANTs o RLS rompan la autenticación en Cloudflare Workers.
+    // Es seguro porque ya validamos la identidad con auth.getUser() arriba.
+    const adminClient = createSupabaseAdminClient();
+    const { data: dbUser, error: dbError } = await adminClient
       .from("usuarios")
       .select("id, rol")
       .eq("auth_id", user.id)
