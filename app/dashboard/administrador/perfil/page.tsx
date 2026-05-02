@@ -15,6 +15,7 @@ interface PerfilData {
   telefono: string | null;
   foto_url: string | null;
   created_at: string;
+  maestro?: { especialidad?: string | null } | null;
 }
 
 export default function PerfilPage() {
@@ -38,7 +39,7 @@ export default function PerfilPage() {
           nombre: data.nombre ?? "",
           telefono: data.telefono ?? "",
           cargo: rolLabel[data.rol] ?? data.rol,
-          especialidad: (data as Record<string, unknown>).maestro ? ((data as Record<string, unknown>).maestro as Record<string, unknown>)?.especialidad as string ?? "" : "",
+          especialidad: data.maestro?.especialidad ?? "",
         });
         setImgSrc(data.foto_url ?? null);
       })
