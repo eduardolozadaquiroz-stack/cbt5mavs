@@ -159,8 +159,18 @@ export async function POST(request: NextRequest) {
   if (dbError || !dbUser) {
     await supabase.auth.signOut();
     log.error("Usuario auth sin registro en DB", { authId: authData.user.id });
+    // DEBUG TEMPORAL — se quitará después de resolver el problema
     return NextResponse.json(
-      { error: "Usuario no encontrado en el sistema" },
+      {
+        error: "Usuario no encontrado en el sistema",
+        _debug: {
+          authId: authData.user.id,
+          dbErrorCode: dbError?.code,
+          dbErrorMsg: dbError?.message,
+          dbErrorDetails: dbError?.details,
+          hasSession: !!authData.session,
+        },
+      },
       { status: 403 }
     );
   }
