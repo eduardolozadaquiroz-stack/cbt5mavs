@@ -1,95 +1,164 @@
 "use client";
-import { useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDBJFu1eTFJVZnEIpf-KZZvSc_2ffZQGUirP05eqMK12TVBzwigT9EauHtrNVGTd-67_1LsY_0TUiZTt05HcyZXomBqsm1Kv6mJ9lOeQcUvsx9rZTLrY0ASxcVj2CMDkmyby29mUF551eD7wf5moJ9QLCBGlQObDInlM23i5b7BpfDkM3436o3JteJDAyE28ef_KoT1fTG6ZYBYE3KNLPUgFcRV7Y5IldhFMLtpChj4-jm42Hz2QxVhJU5Gbk1KUKsL6zRDWY4Uoiz6";
+interface PerfilData {
+  id: number;
+  nombre: string;
+  correo: string;
+  rol: string;
+  telefono: string | null;
+  foto_url: string | null;
+  created_at: string;
+  alumno?: { id: number; matricula: string | null; semestre: number | null; turno: string | null; carrera: { nombre: string } | null; grupos: { id: number; nombre: string }[] };
+}
 
 export default function PerfilAlumnoPage() {
+  const [perfil, setPerfil] = useState<PerfilData | null>(null);
+  const [form, setForm] = useState({ nombre: "", telefono: "" });
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/perfil")
+      .then((r) => r.json())
+      .then((data: PerfilData) => {
+        setPerfil(data);
+        setForm({ nombre: data.nombre ?? "", telefono: data.telefono ?? "" });
+        setImgSrc(data.foto_url ?? null);
+      })
+      .catch(() => setError("No se pudo cargar el perfil"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true); setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("bucket", "avatars");
+      fd.append("file", f);
+      const res = await fetch("/api/storage/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al subir foto");
+      await fetch("/api/perfil", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ foto_url: json.url }) });
+      setImgSrc(json.url);
+      setSuccess("Foto actualizada"); setTimeout(() => setSuccess(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally { setUploading(false); }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true); setError(null);
+    try {
+      const res = await fetch("/api/perfil", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: form.nombre, telefono: form.telefono }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al guardar");
+      setSuccess("Cambios guardados"); setTimeout(() => setSuccess(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally { setSaving(false); }
+  }
+
+  const initials = (perfil?.nombre ?? "A").split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+  const inputBase = "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
+  const labelBase = "text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-1";
+
   return (
     <>
-      <DashboardTopbar
-        userImageSrc={AVATAR}
-        userImageAlt="User profile"
-        linkBase="/dashboard/alumno"
-      />
-
+      <DashboardTopbar userImageAlt="Alumno" linkBase="/dashboard/alumno" />
       <div className="flex pt-16 min-h-screen bg-surface-bright">
         <DashboardSidebar activeLink="inicio" headerVariant="simple" linkBase="/dashboard/alumno" />
-
         <main className="pt-0 md:pl-64 w-full pb-xl">
           <div className="max-w-[800px] mx-auto p-md lg:p-lg">
-
             <div className="mb-lg">
               <h2 className="font-headline-md text-headline-md text-on-background">Mi Perfil</h2>
-              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                Información personal y datos de tu cuenta.
-              </p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Información personal y datos de tu cuenta.</p>
             </div>
 
-            {/* Avatar + name card */}
-            <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden mb-md">
-              <div className="h-28 bg-gradient-to-r from-primary to-secondary" />
-              <div className="px-lg pb-lg flex flex-col sm:flex-row sm:items-end gap-md" style={{ marginTop: "-2.5rem" }}>
-                {/* Avatar with upload button */}
-                <div className="relative flex-shrink-0">
-                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-md">
-                    <img src={AVATAR} alt="Foto de perfil" className="w-full h-full object-cover" id="alumno-avatar-img" />
+            {loading && <div className="text-sm text-on-surface-variant py-8 text-center">Cargando perfil...</div>}
+            {error && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+            {success && <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">✅ {success}</div>}
+
+            {!loading && perfil && (
+              <>
+                {/* Avatar card */}
+                <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden mb-md">
+                  <div className="h-28 bg-gradient-to-r from-primary to-secondary" />
+                  <div className="px-lg pb-lg flex flex-col sm:flex-row sm:items-end gap-md" style={{ marginTop: "-2.5rem" }}>
+                    <div className="relative flex-shrink-0">
+                      <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-md bg-blue-700 flex items-center justify-center text-white text-3xl font-bold">
+                        {imgSrc ? <img src={imgSrc} alt="Foto" className="w-full h-full object-cover" /> : initials}
+                      </div>
+                      <button onClick={() => fileRef.current?.click()} disabled={uploading} className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow border-2 border-white hover:bg-primary/90 transition-colors disabled:opacity-50" title="Cambiar foto">
+                        <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>photo_camera</span>
+                      </button>
+                      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+                    </div>
+                    <div className="pb-2 pt-10 sm:pt-0">
+                      <h3 className="font-title-sm text-title-sm text-on-surface">{perfil.nombre}</h3>
+                      <p className="text-xs text-on-surface-variant">
+                        {perfil.alumno?.matricula ? `Matrícula: ${perfil.alumno.matricula}` : ""}
+                        {perfil.alumno?.carrera?.nombre ? ` · ${perfil.alumno.carrera.nombre}` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow border-2 border-white hover:bg-primary/90 transition-colors"
-                    title="Cambiar foto"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>photo_camera</span>
-                  </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const url = URL.createObjectURL(file);
-                      const img = document.getElementById("alumno-avatar-img") as HTMLImageElement;
-                      if (img) img.src = url;
-                    }}
-                  />
                 </div>
-                <div className="pb-2 pt-10 sm:pt-0">
-                  <h3 className="font-title-sm text-title-sm text-on-surface">García López, Valentina</h3>
-                  <p className="text-xs text-on-surface-variant">No. Control: 220301 · 3°IM-A · Informática</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Info */}
-            <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-              <div className="p-md border-b border-outline-variant bg-surface-bright">
-                <h3 className="font-title-sm text-title-sm text-on-surface">Datos Generales</h3>
-              </div>
-              <div className="divide-y divide-outline-variant">
-                {[
-                  { label: "Nombre completo",   value: "García López, Valentina" },
-                  { label: "No. de control",    value: "220301" },
-                  { label: "Grupo",             value: "3° IM-A" },
-                  { label: "Carrera",           value: "Informática" },
-                  { label: "Semestre",          value: "3° Semestre" },
-                  { label: "Turno",             value: "Matutino" },
-                  { label: "Correo institucional", value: "v.garcia@cbt5chalco.edu.mx" },
-                  { label: "Ciclo escolar",     value: "2023-2024" },
-                ].map((row) => (
-                  <div key={row.label} className="flex flex-col sm:flex-row sm:items-center px-md py-sm gap-1 sm:gap-0">
-                    <span className="text-xs text-on-surface-variant font-medium sm:w-48 flex-shrink-0">{row.label}</span>
-                    <span className="text-sm text-on-surface">{row.value}</span>
+                {/* Formulario edición */}
+                <form onSubmit={handleSave} className="bg-white border border-outline-variant rounded-xl shadow-sm p-md mb-md">
+                  <h3 className="font-title-sm text-title-sm text-on-surface mb-md">Editar datos</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className={labelBase}>Nombre completo</label>
+                      <input value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} className={inputBase} required />
+                    </div>
+                    <div>
+                      <label className={labelBase}>Correo institucional</label>
+                      <input value={perfil.correo} readOnly className={`${inputBase} opacity-60 cursor-not-allowed`} />
+                    </div>
+                    <div>
+                      <label className={labelBase}>Teléfono</label>
+                      <input type="tel" value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} className={inputBase} placeholder="55 1234 5678" />
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="mt-4 flex justify-end">
+                    <button type="submit" disabled={saving} className="px-5 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">{saving ? "Guardando..." : "Guardar cambios"}</button>
+                  </div>
+                </form>
 
+                {/* Info académica */}
+                <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-md border-b border-outline-variant bg-surface-bright">
+                    <h3 className="font-title-sm text-title-sm text-on-surface">Datos académicos</h3>
+                  </div>
+                  <div className="divide-y divide-outline-variant">
+                    {[
+                      { label: "Correo", value: perfil.correo },
+                      { label: "Matrícula", value: perfil.alumno?.matricula ?? "—" },
+                      { label: "Carrera", value: perfil.alumno?.carrera?.nombre ?? "—" },
+                      { label: "Semestre", value: perfil.alumno?.semestre ? `${perfil.alumno.semestre}° Semestre` : "—" },
+                      { label: "Turno", value: perfil.alumno?.turno ?? "—" },
+                      { label: "Grupo", value: perfil.alumno?.grupos?.[0]?.nombre ?? "—" },
+                      { label: "Miembro desde", value: new Date(perfil.created_at).toLocaleDateString("es-MX") },
+                    ].map((row) => (
+                      <div key={row.label} className="flex flex-col sm:flex-row sm:items-center px-md py-sm gap-1 sm:gap-0">
+                        <span className="text-xs text-on-surface-variant font-medium sm:w-48 flex-shrink-0">{row.label}</span>
+                        <span className="text-sm text-on-surface capitalize">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
