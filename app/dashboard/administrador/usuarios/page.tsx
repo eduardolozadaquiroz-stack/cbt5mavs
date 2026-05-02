@@ -50,7 +50,8 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [step, setStep] = useState<"form" | "verify" | "saving">("form");
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [form, setForm] = useState({ nombre: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
@@ -85,7 +86,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   }
 
   async function handleConfirmVerification() {
-    setStep("saving");
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/usuarios", {
         method: "POST",
@@ -101,6 +102,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         const data = await res.json().catch(() => ({}));
         setErrors({ email: (data as { error?: string }).error ?? "Error al crear usuario." });
         setStep("form");
+        setSaving(false);
         return;
       }
       onCreated();
@@ -108,6 +110,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
     } catch {
       setErrors({ email: "Error de conexión. Intenta de nuevo." });
       setStep("form");
+      setSaving(false);
     }
   }
 
@@ -122,7 +125,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
           <h2 className="font-semibold text-on-surface text-base">
-            {step === "form" ? "Nuevo Usuario" : step === "saving" ? "Guardando…" : "Verificar Correo Electrónico"}
+            {step === "form" ? "Nuevo Usuario" : saving ? "Guardando…" : "Verificar Correo Electrónico"}
           </h2>
           <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -326,11 +329,11 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
               </li>
             </ul>
             <div className="flex gap-3 w-full pt-2 border-t border-outline-variant">
-              <button type="button" onClick={onClose} disabled={step === "saving"} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">
+              <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">
                 Cerrar
               </button>
-              <button type="button" onClick={handleConfirmVerification} disabled={step === "saving"} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">
-                {step === "saving" ? "Guardando…" : "Entendido, agregar usuario"}
+              <button type="button" onClick={handleConfirmVerification} disabled={saving} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">
+                {saving ? "Guardando…" : "Entendido, agregar usuario"}
               </button>
             </div>
           </div>
