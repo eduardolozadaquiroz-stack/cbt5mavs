@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Notif {
   id: number;
@@ -80,6 +80,16 @@ export default function DashboardTopbar({
   const [displayName, setDisplayName]     = useState(userName);
   const [displayRole, setDisplayRole]     = useState(userRole);
   const [displayImage, setDisplayImage]   = useState(userImageSrc);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } finally {
+      sessionStorage.clear();
+      window.location.href = "/login";
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/perfil")
@@ -174,10 +184,55 @@ export default function DashboardTopbar({
   // Iniciales del usuario para avatar fallback
   const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
+  // Mobile nav links
+  const mobileRole = linkBase?.includes("/alumno") ? "alumno" :
+    linkBase?.includes("/maestro") ? "maestro" :
+    linkBase?.includes("/padres") ? "padres" : "admin";
+  type MobileLink = { id: string; label: string; category?: string };
+  const allSideLinks: MobileLink[] = [
+    { id: "inicio",         label: "Inicio" },
+    { id: "usuarios",       label: "Usuarios" },
+    { id: "calificaciones", label: "Calificaciones" },
+    { id: "asistencias",    label: "Asistencias" },
+    { id: "grupos",         label: "Grupos" },
+    { id: "reportes",       label: "Reportes" },
+    { id: "audit-log",      label: "Audit Log" },
+    { id: "configuracion",  label: "Configuración de Secciones", category: "contenido" },
+    { id: "editar-inicio",  label: "Editar: Inicio",             category: "contenido" },
+    { id: "admision",       label: "Editar: Admisión",           category: "contenido" },
+    { id: "carreras",       label: "Editar: Carreras",           category: "contenido" },
+    { id: "avisos",         label: "Editar: Avisos",             category: "contenido" },
+    { id: "contacto",       label: "Editar: Contacto",           category: "contenido" },
+    { id: "nosotros",       label: "Editar: Nosotros",           category: "contenido" },
+  ];
+  let mobileLinks: MobileLink[] = allSideLinks;
+  if (mobileRole === "padres") {
+    mobileLinks = [
+      { id: "inicio",         label: "Inicio" },
+      { id: "calificaciones", label: "Calificaciones" },
+      { id: "asistencias",    label: "Asistencias" },
+    ];
+  } else if (mobileRole === "alumno" || mobileRole === "maestro") {
+    mobileLinks = allSideLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && !l.category);
+  }
+  const mobileSideHref = (id: string) => (!linkBase ? "#" : id === "inicio" ? linkBase : `${linkBase}/${id}`);
+
   return (
+    <>
     <header className="fixed top-0 w-full z-50 flex justify-between items-center px-4 md:px-6 h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
       {/* ── Izquierda: logo + nav ── */}
-      <div className="flex items-center gap-4 md:gap-6 min-w-0">
+      <div className="flex items-center gap-2 md:gap-6 min-w-0">
+        {linkBase && (
+          <button
+            className="flex md:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Abrir menú"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+          </button>
+        )}
         <div className="flex items-center gap-2 whitespace-nowrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Logo CBT Núm. 5" className="h-9 w-auto object-contain" />
@@ -390,20 +445,90 @@ export default function DashboardTopbar({
                 </a>
               ))}
               <div className="border-t border-slate-100 dark:border-slate-700">
-                <a
-                  href="/login"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => { setUserOpen(false); handleLogout(); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                   </svg>
                   Cerrar sesión
-                </a>
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
     </header>
+
+      {/* ── Mobile drawer ── */}
+      {mobileMenuOpen && linkBase && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <nav className="fixed left-0 top-0 bottom-0 w-72 z-50 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col md:hidden overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="CBT Núm. 5" className="h-10 w-auto object-contain" />
+                <div>
+                  <div className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</div>
+                  <div className="text-[10px] text-slate-400">Gestión Escolar</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                aria-label="Cerrar menú"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2 px-3">
+              <ul className="flex flex-col gap-1">
+                {mobileLinks.map((link, idx) => {
+                  const showSep = link.category === "contenido" && idx > 0 && mobileLinks[idx - 1]?.category !== "contenido";
+                  return (
+                    <div key={link.id}>
+                      {showSep && (
+                        <div className="my-2 border-t border-slate-200 dark:border-slate-700 pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 px-4 uppercase tracking-widest mb-1">Edición de Contenido</p>
+                        </div>
+                      )}
+                      <li>
+                        <a
+                          href={mobileSideHref(link.id)}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm transition-colors"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    </div>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-sm transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+                Cerrar Sesión
+              </button>
+            </div>
+          </nav>
+        </>
+      )}
+    </>
   );
 }

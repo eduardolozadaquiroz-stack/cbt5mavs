@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
@@ -12,6 +12,8 @@ export default function EditarInicioPage() {
   const { config, updateInicio } = useAdminConfig();
   const [form, setForm] = useState<InicioConfig>(config.inicio);
   const [saved, setSaved] = useState(false);
+  const [uploadingSlide, setUploadingSlide] = useState<boolean[]>([]);
+  const slideFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     setForm(config.inicio);
@@ -50,6 +52,24 @@ export default function EditarInicioPage() {
       return { ...f, metricas };
     });
     setSaved(false);
+  }
+
+  async function handleSlideFile(idx: number, file: File) {
+    setUploadingSlide((prev) => { const a = [...prev]; a[idx] = true; return a; });
+    try {
+      const fd = new FormData();
+      fd.append("bucket", "site");
+      fd.append("file", file);
+      const res = await fetch("/api/storage/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al subir imagen");
+      setSlide(idx, "src", json.url);
+      setSlide(idx, "alt", file.name.replace(/\.[^.]+$/, ""));
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error al subir imagen");
+    } finally {
+      setUploadingSlide((prev) => { const a = [...prev]; a[idx] = false; return a; });
+    }
   }
 
   function handleSave(e: React.FormEvent) {
@@ -148,7 +168,7 @@ export default function EditarInicioPage() {
                 </button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Pega la URL de la imagen (Unsplash, servidor propio, etc.). Resolución recomendada: 1600×900px.
+                Sube imágenes desde tu PC o teléfono. Formatos: JPG, PNG, WebP. Máx. 5 MB. Resolución recomendada: 1600×900px.
               </p>
               <div className="space-y-4">
                 {form.carousel.map((slide, idx) => (
@@ -166,8 +186,25 @@ export default function EditarInicioPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="md:col-span-2">
-                        <label className={labelBase}>URL de imagen</label>
-                        <input type="url" value={slide.src} onChange={(e) => setSlide(idx, "src", e.target.value)} className={inputBase} placeholder="https://..." />
+                        <label className={labelBase}>Imagen</label>
+                        <input
+                          ref={(el) => { slideFileRefs.current[idx] = el; }}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSlideFile(idx, f); e.target.value = ""; }}
+                        />
+                        <button
+                          type="button"
+                          disabled={uploadingSlide[idx]}
+                          onClick={() => slideFileRefs.current[idx]?.click()}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors w-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-500 flex-shrink-0">
+                            <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                          </svg>
+                          {uploadingSlide[idx] ? "Subiendo..." : slide.src ? "Cambiar imagen" : "Subir imagen desde PC"}
+                        </button>
                       </div>
                       <div>
                         <label className={labelBase}>Etiqueta</label>
