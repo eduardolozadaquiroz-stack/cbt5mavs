@@ -90,8 +90,9 @@ export async function POST(request: NextRequest) {
   // Si es matrícula (solo dígitos) y rol alumno → buscar email en DB
   let email = identifier;
   if (rol === "alumno" && /^\d+$/.test(identifier)) {
-    const db = createSupabaseServerClient();
-    const resolved = await (await db)
+    // Usar admin client para bypassear RLS (el usuario aún no está autenticado)
+    const adminDb = createSupabaseAdminClient();
+    const resolved = await adminDb
       .from("alumnos")
       .select("usuarios!inner(email)")
       .eq("matricula", identifier)
