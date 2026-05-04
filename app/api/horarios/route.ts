@@ -29,13 +29,11 @@ export async function GET(request: NextRequest) {
   let query = admin.from("horarios").select(selectFields).order("dia_semana").order("hora_inicio");
 
   if (user.rol === "alumno") {
-    // Obtener el grupo del alumno
+    // alumnos.id = usuarios.id = user.db_id — usar directamente como alumno_id en alumno_grupo
     const { data: alumnoData } = await admin
       .from("alumno_grupo")
       .select("grupo_id")
-      .eq("alumno_id", (
-        await admin.from("alumnos").select("id").eq("usuario_id", user.db_id).single()
-      ).data?.id ?? "")
+      .eq("alumno_id", user.db_id)
       .eq("activo", true)
       .maybeSingle();
 
@@ -43,13 +41,8 @@ export async function GET(request: NextRequest) {
     query = query.eq("grupo_id", alumnoData.grupo_id);
 
   } else if (user.rol === "maestro") {
-    const { data: maestroData } = await admin
-      .from("maestros")
-      .select("id")
-      .eq("usuario_id", user.db_id)
-      .single();
-    if (!maestroData) return NextResponse.json({ horarios: [] });
-    query = query.eq("maestro_id", maestroData.id);
+    // maestros.id = usuarios.id = user.db_id — usar directamente como maestro_id en horarios
+    query = query.eq("maestro_id", user.db_id);
 
   } else if (user.rol === "admin" || user.rol === "padres") {
     if (grupo_id_param && isUUID(grupo_id_param)) {

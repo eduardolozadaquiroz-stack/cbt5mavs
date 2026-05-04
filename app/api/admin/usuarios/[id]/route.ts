@@ -53,10 +53,12 @@ export async function PATCH(
   }
 
   const updates: Record<string, string | boolean | null> = {};
-  if (typeof body.nombre   === "string") updates.nombre   = sanitize(body.nombre, 120);
-  if (typeof body.telefono === "string") updates.telefono = sanitize(body.telefono, 20);
-  if (typeof body.foto_url === "string") updates.foto_url = sanitize(body.foto_url, 500);
-  if (typeof body.activo   === "boolean") updates.activo  = body.activo;
+  if (typeof body.nombre            === "string") updates.nombre           = sanitize(body.nombre, 120);
+  if (typeof body.apellido_paterno  === "string") updates.apellido_paterno = sanitize(body.apellido_paterno, 80);
+  if (body.apellido_materno !== undefined) updates.apellido_materno = body.apellido_materno === null ? null : sanitize(body.apellido_materno as string, 80) || null;
+  if (typeof body.telefono          === "string") updates.telefono         = sanitize(body.telefono, 20);
+  if (typeof body.foto_url          === "string") updates.foto_url         = sanitize(body.foto_url, 500);
+  if (typeof body.activo            === "boolean") updates.activo          = body.activo;
   if (typeof body.rol === "string" && ROLES_VALIDOS.includes(body.rol)) updates.rol = body.rol;
 
   if (Object.keys(updates).length === 0) {

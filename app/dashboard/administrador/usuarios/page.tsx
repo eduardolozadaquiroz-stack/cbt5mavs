@@ -12,11 +12,18 @@ type RolNuevo = "Alumno" | "Maestro" | "Admin" | "Padres";
 interface ApiUsuario {
   id: string;
   nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string | null;
   correo: string;
   rol: string;
   telefono: string | null;
   activo: boolean;
   created_at: string;
+}
+
+function nombreCompleto(u: ApiUsuario): string {
+  const partes = [u.apellido_paterno, u.apellido_materno, u.nombre].filter(Boolean);
+  return partes.join(" ");
 }
 
 const rolColors: Record<string, string> = {
@@ -366,7 +373,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState({ nombre: usuario.nombre, rol: usuario.rol, activo: usuario.activo });
+  const [form, setForm] = useState({ apellido_paterno: usuario.apellido_paterno, apellido_materno: usuario.apellido_materno ?? "", nombre: usuario.nombre, rol: usuario.rol, activo: usuario.activo });
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState("");
 
@@ -380,7 +387,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
       const res = await fetch(`/api/admin/usuarios/${usuario.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: form.nombre, rol: form.rol, activo: form.activo }),
+        body: JSON.stringify({ apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno || null, nombre: form.nombre, rol: form.rol, activo: form.activo }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -410,7 +417,15 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
           <div>
-            <label className={labelBase}>Nombre completo</label>
+            <label className={labelBase}>Apellido Paterno</label>
+            <input value={form.apellido_paterno} onChange={(e) => set("apellido_paterno", e.target.value)} className={inputBase} />
+          </div>
+          <div>
+            <label className={labelBase}>Apellido Materno <span className="font-normal normal-case">(opcional)</span></label>
+            <input value={form.apellido_materno} onChange={(e) => set("apellido_materno", e.target.value)} className={inputBase} />
+          </div>
+          <div>
+            <label className={labelBase}>Nombre(s)</label>
             <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className={inputBase} />
           </div>
           <div>
@@ -447,12 +462,161 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
   );
 }
 
+// ─── Modal Vincular Alumno ────────────────────────────────────────────────────
+function ModalVincularAlumno({ tutor, onClose }: {
+  tutor: ApiUsuario;
+  onClose: () => void;
+}) {
+  const [alumnosVinculados, setAlumnosVinculados] = useState<{ vínculo_id: string; alumno_id: string; matricula: string; semestre: number; nombre: string }[]>([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [resultados, setResultados] = useState<{ id: string; nombre: string; correo: string; rol: string; apellido_paterno: string; apellido_materno: string | null }[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [vinculando, setVinculando] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [msgError, setMsgError] = useState("");
+
+  // Cargar vínculos existentes
+  useEffect(() => {
+    fetch(`/api/admin/alumno-tutor?tutor_id=${tutor.id}`)
+      .then(r => r.json())
+      .then(d => setAlumnosVinculados(d.alumnos ?? []))
+      .catch(() => {});
+  }, [tutor.id]);
+
+  async function buscarAlumnos() {
+    if (!busqueda.trim()) return;
+    setBuscando(true);
+    setResultados([]);
+    try {
+      const res = await fetch(`/api/admin/usuarios?rol=alumno&search=${encodeURIComponent(busqueda)}&limit=10`);
+      const d = await res.json() as { usuarios: { id: string; nombre: string; correo: string; rol: string; apellido_paterno: string; apellido_materno: string | null }[] };
+      setResultados(d.usuarios ?? []);
+    } catch { /* empty */ }
+    setBuscando(false);
+  }
+
+  async function vincular(alumno_id: string) {
+    setVinculando(true);
+    setMsg("");
+    setMsgError("");
+    try {
+      const res = await fetch("/api/admin/alumno-tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alumno_id, tutor_id: tutor.id }),
+      });
+      const d = await res.json() as { ok?: boolean; error?: string; message?: string };
+      if (!res.ok) { setMsgError(d.error ?? "Error al vincular."); return; }
+      setMsg(d.message ?? "Alumno vinculado correctamente.");
+      // Recargar lista
+      const r2 = await fetch(`/api/admin/alumno-tutor?tutor_id=${tutor.id}`);
+      const d2 = await r2.json() as { alumnos: typeof alumnosVinculados };
+      setAlumnosVinculados(d2.alumnos ?? []);
+    } catch { setMsgError("Error de conexión."); }
+    setVinculando(false);
+  }
+
+  async function desvincular(alumno_id: string) {
+    try {
+      await fetch("/api/admin/alumno-tutor", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alumno_id, tutor_id: tutor.id }),
+      });
+      setAlumnosVinculados(prev => prev.filter(a => a.alumno_id !== alumno_id));
+    } catch { /* empty */ }
+  }
+
+  const inputBase = "w-full px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-sm text-on-surface border-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-outline-variant overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+          <div>
+            <h2 className="font-semibold text-on-surface text-base">Vincular Alumno</h2>
+            <p className="text-xs text-on-surface-variant mt-0.5">{nombreCompleto(tutor)}</p>
+          </div>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+
+          {/* Alumnos ya vinculados */}
+          {alumnosVinculados.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Alumnos vinculados</p>
+              <ul className="flex flex-col gap-1">
+                {alumnosVinculados.map(a => (
+                  <li key={a.alumno_id} className="flex items-center justify-between bg-surface-container-low rounded-lg px-3 py-2 text-sm">
+                    <span className="text-on-surface">{a.nombre} <span className="text-on-surface-variant text-xs">· {a.matricula}</span></span>
+                    <button onClick={() => desvincular(a.alumno_id)} className="text-red-500 hover:text-red-700 text-xs font-semibold ml-2">Desvincular</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Buscador */}
+          <div>
+            <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Buscar alumno para vincular</p>
+            <div className="flex gap-2">
+              <input
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && buscarAlumnos()}
+                placeholder="Nombre del alumno..."
+                className={inputBase}
+              />
+              <button
+                onClick={buscarAlumnos}
+                disabled={buscando}
+                className="px-3 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {buscando ? "…" : "Buscar"}
+              </button>
+            </div>
+          </div>
+
+          {/* Resultados */}
+          {resultados.length > 0 && (
+            <ul className="flex flex-col gap-1">
+              {resultados.map(a => {
+                const yaVinculado = alumnosVinculados.some(v => v.alumno_id === a.id);
+                return (
+                  <li key={a.id} className="flex items-center justify-between bg-surface-container-low rounded-lg px-3 py-2 text-sm">
+                    <span className="text-on-surface">{[a.apellido_paterno, a.apellido_materno, a.nombre].filter(Boolean).join(" ")}</span>
+                    {yaVinculado
+                      ? <span className="text-xs text-green-600 font-semibold ml-2">Ya vinculado</span>
+                      : <button onClick={() => vincular(a.id)} disabled={vinculando} className="text-primary hover:text-primary/80 text-xs font-semibold ml-2 disabled:opacity-50">Vincular</button>
+                    }
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {msg && <p className="text-xs text-green-700 dark:text-green-400">{msg}</p>}
+          {msgError && <p className="text-xs text-red-600">{msgError}</p>}
+        </div>
+
+        <div className="px-6 pb-5 border-t border-outline-variant pt-4">
+          <button onClick={onClose} className="w-full py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function UsuariosPage() {
   const [query, setQuery] = useState("");
   const [filtroRol, setFiltroRol] = useState<Rol>("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState<ApiUsuario | null>(null);
+  const [vinculando, setVinculando] = useState<ApiUsuario | null>(null);
   const [usuarios, setUsuarios] = useState<ApiUsuario[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -483,6 +647,8 @@ export default function UsuariosPage() {
     const q = query.toLowerCase();
     return (
       u.nombre.toLowerCase().includes(q) ||
+      u.apellido_paterno.toLowerCase().includes(q) ||
+      (u.apellido_materno ?? "").toLowerCase().includes(q) ||
       u.correo.toLowerCase().includes(q)
     );
   });
@@ -570,7 +736,7 @@ export default function UsuariosPage() {
                     </tr>
                   ) : filtrados.map((u) => (
                     <tr key={u.id} className="odd:bg-surface even:bg-surface-bright hover:bg-surface-container-lowest transition-colors">
-                      <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{u.nombre}</td>
+                      <td className="p-2 px-4 border-b border-outline-variant font-medium text-on-surface">{nombreCompleto(u)}</td>
                       <td className="p-2 px-4 border-b border-outline-variant">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${rolColors[u.rol] ?? ""}`}>{u.rol}</span>
                       </td>
@@ -586,6 +752,16 @@ export default function UsuariosPage() {
                         </span>
                       </td>
                       <td className="p-2 px-4 border-b border-outline-variant text-right">
+                        {u.rol === "padres" && (
+                          <button
+                            onClick={() => setVinculando(u)}
+                            className="text-on-surface-variant hover:text-teal-600 p-1 rounded mr-1" title="Vincular alumno"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                            </svg>
+                          </button>
+                        )}
                         <button
                           onClick={() => setEditando(u)}
                           className="text-on-surface-variant hover:text-primary p-1 rounded" title="Editar"
@@ -621,6 +797,13 @@ export default function UsuariosPage() {
           usuario={editando}
           onClose={() => setEditando(null)}
           onSaved={() => { cargarUsuarios(); setEditando(null); }}
+        />
+      )}
+
+      {vinculando && (
+        <ModalVincularAlumno
+          tutor={vinculando}
+          onClose={() => setVinculando(null)}
         />
       )}
     </>

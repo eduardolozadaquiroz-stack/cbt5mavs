@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const admin = createSupabaseAdminClient();
   let query = admin
     .from("usuarios")
-    .select("id, nombre, correo:email, rol, telefono, activo, created_at", { count: "exact" })
+    .select("id, nombre, apellido_paterno, apellido_materno, correo:email, rol, telefono, activo, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 

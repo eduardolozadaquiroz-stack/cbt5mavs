@@ -35,9 +35,6 @@ export async function GET() {
         estatus,
         carreras ( nombre, clave ),
         usuarios ( nombre, apellido_paterno, apellido_materno )
-      ),
-      grupos (
-        nombre
       )
     `)
     .eq("tutor_id", authUser.db_id);
@@ -58,7 +55,6 @@ export async function GET() {
     const alumno  = row.alumnos  as Record<string, unknown> | null;
     const usuario = alumno?.usuarios as Record<string, unknown> | null;
     const carrera = alumno?.carreras as Record<string, unknown> | null;
-    const grupo   = row.grupos   as Record<string, unknown> | null;
 
     return {
       alumno_id: row.alumno_id as string,
@@ -69,7 +65,7 @@ export async function GET() {
             .join(" ")
         : "Alumno",
       semestre: alumno?.semestre_actual as number,
-      grupo:    (grupo?.nombre  as string) ?? "—",
+      grupo:    "—",
       carrera:  (carrera?.nombre as string) ?? "—",
       estatus:  alumno?.estatus as string,
     };
