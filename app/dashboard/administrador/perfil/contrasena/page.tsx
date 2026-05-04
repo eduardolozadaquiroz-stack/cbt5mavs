@@ -35,15 +35,42 @@ export default function ContrasenaPage() {
   const [error, setError] = useState("");
   const [ok, setOk] = useState(false);
 
+  const [saving, setSaving] = useState(false);
+
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); setError(""); setOk(false); }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!form.actual) { setError("Ingresa tu contraseña actual."); return; }
     if (form.nueva.length < 8) { setError("La nueva contraseña debe tener al menos 8 caracteres."); return; }
+    if (!/[A-Z]/.test(form.nueva) || !/[0-9]/.test(form.nueva)) {
+      setError("La nueva contraseña debe tener al menos una mayúscula y un número."); return;
+    }
     if (form.nueva !== form.confirmar) { setError("Las contraseñas no coinciden."); return; }
-    setOk(true);
-    setForm({ actual: "", nueva: "", confirmar: "" });
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/perfil/cambiar-contrasena", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: form.actual,
+          newPassword:     form.nueva,
+          confirmPassword: form.confirmar,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError((data as { error?: string }).error ?? "No se pudo actualizar la contraseña.");
+        return;
+      }
+      setOk(true);
+      setForm({ actual: "", nueva: "", confirmar: "" });
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const inputBase =
@@ -147,8 +174,8 @@ export default function ContrasenaPage() {
               <Link href={`${BASE}/perfil`} className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center">
                 Cancelar
               </Link>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition-colors">
-                Actualizar contraseña
+              <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition-colors disabled:opacity-60">
+                {saving ? "Actualizando…" : "Actualizar contraseña"}
               </button>
             </div>
           </form>

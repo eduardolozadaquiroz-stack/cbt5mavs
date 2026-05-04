@@ -7,7 +7,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 const BASE = "/dashboard/administrador";
 
 type Rol = "Todos" | "Alumno" | "Maestro" | "Admin";
-type RolNuevo = "Alumno" | "Maestro" | "Admin";
+type RolNuevo = "Alumno" | "Maestro" | "Admin" | "Padres";
 
 interface ApiUsuario {
   id: string;
@@ -54,7 +54,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
-  const [form, setForm] = useState({ nombre: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
+  const [form, setForm] = useState({ apellido_paterno: "", apellido_materno: "", nombre: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingEmail, setPendingEmail] = useState("");
 
@@ -69,6 +69,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
 
   function validate() {
     const e: Record<string, string> = {};
+    if (!form.apellido_paterno.trim()) e.apellido_paterno = "El apellido paterno es obligatorio.";
     if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio.";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Ingresa un correo válido.";
@@ -92,10 +93,12 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre:   form.nombre,
-          correo:   form.email,
-          rol:      form.rol.toLowerCase(),
-          password: form.pw,
+          apellido_paterno: form.apellido_paterno,
+          apellido_materno: form.apellido_materno,
+          nombre:           form.nombre,
+          correo:           form.email,
+          rol:              form.rol.toLowerCase(),
+          password:         form.pw,
         }),
       });
       if (!res.ok) {
@@ -138,10 +141,23 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         {step === "form" && (
           <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
 
-            {/* Nombre */}
+            {/* Apellido Paterno */}
             <div>
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Nombre completo</label>
-              <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Apellido Apellido, Nombre" className={`${inputBase} ${errors.nombre ? inputErr : inputOk}`} />
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Apellido Paterno</label>
+              <input value={form.apellido_paterno} onChange={(e) => set("apellido_paterno", e.target.value)} placeholder="Ej. González" className={`${inputBase} ${errors.apellido_paterno ? inputErr : inputOk}`} />
+              {errors.apellido_paterno && <p className="text-xs text-red-600 mt-1">{errors.apellido_paterno}</p>}
+            </div>
+
+            {/* Apellido Materno */}
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Apellido Materno <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+              <input value={form.apellido_materno} onChange={(e) => set("apellido_materno", e.target.value)} placeholder="Ej. Ramírez" className={`${inputBase} ${inputOk}`} />
+            </div>
+
+            {/* Nombre(s) */}
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Nombre(s)</label>
+              <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Ej. Juan Carlos" className={`${inputBase} ${errors.nombre ? inputErr : inputOk}`} />
               {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
             </div>
 
@@ -152,6 +168,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
                 <option value="Alumno">Alumno</option>
                 <option value="Maestro">Maestro</option>
                 <option value="Admin">Admin</option>
+                <option value="Padres">Padre / Tutor</option>
               </select>
             </div>
 

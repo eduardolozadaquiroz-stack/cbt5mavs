@@ -46,15 +46,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const nombre   = sanitize(body.nombre, 120);
-  const correo   = sanitize(body.correo, 254);
-  const rol      = sanitize(body.rol, 20);
-  const telefono = sanitize(body.telefono ?? "", 20);
-  const password = typeof body.password === "string" ? body.password : "";
+  const nombre            = sanitize(body.nombre, 120);
+  const apellido_paterno  = sanitize(body.apellido_paterno, 80);
+  const apellido_materno  = sanitize(body.apellido_materno ?? "", 80);
+  const correo            = sanitize(body.correo, 254);
+  const rol               = sanitize(body.rol, 20);
+  const telefono          = sanitize(body.telefono ?? "", 20);
+  const password          = typeof body.password === "string" ? body.password : "";
 
-  if (!nombre || !isEmail(correo) || !ROLES_VALIDOS.includes(rol) || password.length < 8) {
+  if (!nombre || !apellido_paterno || !isEmail(correo) || !ROLES_VALIDOS.includes(rol) || password.length < 8) {
     return NextResponse.json(
-      { error: "nombre, correo válido, rol válido y password ≥8 chars son requeridos" },
+      { error: "nombre, apellido paterno, correo válido, rol válido y password ≥8 chars son requeridos" },
       { status: 400 }
     );
   }
@@ -81,6 +83,8 @@ export async function POST(request: NextRequest) {
     .insert({
       auth_id: authData.user.id,
       nombre,
+      apellido_paterno,
+      apellido_materno: apellido_materno || null,
       email: correo,
       rol,
       telefono: telefono || null,
@@ -136,6 +140,16 @@ export async function POST(request: NextRequest) {
     });
     if (maestroError) {
       console.error("[usuarios POST] maestros insert warning:", maestroError.code, maestroError.message);
+    }
+  }
+
+  // Si es padre/tutor, crear registro en tabla padres_tutores
+  if (rol === "padres") {
+    const { error: padresError } = await admin.from("padres_tutores").insert({
+      id: dbUser.id,
+    });
+    if (padresError) {
+      console.error("[usuarios POST] padres_tutores insert warning:", padresError.code, padresError.message);
     }
   }
 
