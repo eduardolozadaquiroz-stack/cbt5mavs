@@ -1,154 +1,131 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEzpJcll0X5d9jtID0KZQY9DQZRRq2urTYr7OTdd5wbN3bwTITJS_udArelmyFwKHp52jZMTZigPK27koZBzrOk8apUTBoENBTNSQ_9UV341OiiIG2ayvR2P6RSKF_-zlJhwraxvKTWP30vx0XqFtP3QHDJZtZ5q0FsLnV0k_-5Y9u3x3nfcJe2qD7R3eQk7iDmNl6Al0VZjLNgQ06SdDzzwjB1yyZU_u4Aiu24ZTFsCj_CbalIFeIYzf8-mCoS4Y8hn9Ux-Vpjacf";
-
-const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-
-const HORARIOS: Record<string, Record<string, { grupo: string; materia: string; aula: string; color: string } | null>> = {
-  "07:00 – 08:00": {
-    Lunes:     { grupo: "301-G", materia: "Matemáticas Aplicadas III", aula: "Aula 12", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    Martes:    null,
-    Miércoles: { grupo: "301-G", materia: "Matemáticas Aplicadas III", aula: "Aula 12", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    Jueves:    null,
-    Viernes:   { grupo: "301-G", materia: "Matemáticas Aplicadas III", aula: "Aula 12", color: "bg-blue-50 border-blue-200 text-blue-800" },
-  },
-  "08:00 – 09:00": {
-    Lunes:     null,
-    Martes:    { grupo: "302-G", materia: "Biología Contemporánea", aula: "Lab. Ciencias", color: "bg-green-50 border-green-200 text-green-800" },
-    Miércoles: null,
-    Jueves:    { grupo: "302-G", materia: "Biología Contemporánea", aula: "Lab. Ciencias", color: "bg-green-50 border-green-200 text-green-800" },
-    Viernes:   null,
-  },
-  "09:00 – 10:00": {
-    Lunes:     { grupo: "301-I", materia: "Inglés V", aula: "Aula 8", color: "bg-purple-50 border-purple-200 text-purple-800" },
-    Martes:    null,
-    Miércoles: { grupo: "301-I", materia: "Inglés V", aula: "Aula 8", color: "bg-purple-50 border-purple-200 text-purple-800" },
-    Jueves:    null,
-    Viernes:   { grupo: "301-I", materia: "Inglés V", aula: "Aula 8", color: "bg-purple-50 border-purple-200 text-purple-800" },
-  },
-  "10:00 – 11:00": {
-    Lunes:     null,
-    Martes:    { grupo: "301-G", materia: "Matemáticas Aplicadas III", aula: "Aula 12", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    Miércoles: null,
-    Jueves:    { grupo: "301-G", materia: "Matemáticas Aplicadas III", aula: "Aula 12", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    Viernes:   null,
-  },
-  "11:00 – 12:00": {
-    Lunes:     { grupo: "302-G", materia: "Biología Contemporánea", aula: "Lab. Ciencias", color: "bg-green-50 border-green-200 text-green-800" },
-    Martes:    null,
-    Miércoles: { grupo: "302-G", materia: "Biología Contemporánea", aula: "Lab. Ciencias", color: "bg-green-50 border-green-200 text-green-800" },
-    Jueves:    null,
-    Viernes:   { grupo: "302-G", materia: "Biología Contemporánea", aula: "Lab. Ciencias", color: "bg-green-50 border-green-200 text-green-800" },
-  },
-  "12:00 – 13:00": {
-    Lunes:     null,
-    Martes:    { grupo: "301-I", materia: "Inglés V", aula: "Aula 8", color: "bg-purple-50 border-purple-200 text-purple-800" },
-    Miércoles: null,
-    Jueves:    { grupo: "301-I", materia: "Inglés V", aula: "Aula 8", color: "bg-purple-50 border-purple-200 text-purple-800" },
-    Viernes:   null,
-  },
-  "13:00 – 14:00": {
-    Lunes:     null,
-    Martes:    null,
-    Miércoles: null,
-    Jueves:    null,
-    Viernes:   null,
-  },
-};
-
-const LEYENDA = [
-  { color: "bg-blue-200",   label: "301-G · Matemáticas Aplicadas III" },
-  { color: "bg-green-200",  label: "302-G · Biología Contemporánea" },
-  { color: "bg-purple-200", label: "301-I · Inglés V" },
+const DIAS_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+const COLORS = [
+  "bg-blue-50 border-blue-300 text-blue-800",
+  "bg-green-50 border-green-300 text-green-800",
+  "bg-purple-50 border-purple-300 text-purple-800",
+  "bg-yellow-50 border-yellow-300 text-yellow-800",
+  "bg-rose-50 border-rose-300 text-rose-800",
+  "bg-orange-50 border-orange-300 text-orange-800",
+  "bg-teal-50 border-teal-300 text-teal-800",
 ];
 
-const HORAS = Object.keys(HORARIOS);
+interface HorarioSlot {
+  id: string;
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+  aula: string | null;
+  materia: { nombre: string };
+  grupo: { nombre: string; carrera: { nombre: string } } | null;
+}
 
 export default function HorariosMaestroPage() {
+  const [horarios, setHorarios] = useState<HorarioSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/horarios")
+      .then((r) => r.json())
+      .then((d) => {
+        setHorarios(d.horarios ?? []);
+        setLoading(false);
+      });
+  }, []);
+
+  const horas = [...new Map(
+    horarios.map((h) => [h.hora_inicio, { inicio: h.hora_inicio, fin: h.hora_fin }])
+  ).values()].sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+  // Color por combinación grupo+materia
+  const colorMap = new Map<string, string>();
+  [...new Set(horarios.map((h) => `${h.grupo?.nombre ?? ""}|${h.materia.nombre}`))].forEach((key, i) => {
+    colorMap.set(key, COLORS[i % COLORS.length]);
+  });
+
   return (
     <>
-      <DashboardTopbar
-        userImageSrc={AVATAR}
-        userImageAlt="User profile"
-        activeTopLink="horarios"
-        linkBase="/dashboard/maestro"
-      />
+      <DashboardTopbar userImageAlt="Maestro" activeTopLink="horarios" linkBase="/dashboard/maestro" />
 
       <div className="flex pt-16 min-h-screen bg-surface-bright">
         <DashboardSidebar activeLink="inicio" headerVariant="cbt-circle" linkBase="/dashboard/maestro" />
 
-        <main className="pt-0 md:pl-64 w-full pb-xl">
+        <main className="pt-0 md:pl-64 w-full pb-xl overflow-x-auto">
           <div className="max-w-[1280px] mx-auto p-md lg:p-lg">
 
-            {/* Header */}
-            <div className="mb-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="mb-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md">
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-background">Mis Horarios</h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                  Horario de clases asignado. Ciclo 2023-2024 · Turno Matutino
-                </p>
+                <h1 className="font-display-lg text-display-lg text-on-background">Mi Horario</h1>
+                <p className="text-on-surface-variant mt-unit">Carga horaria del ciclo actual.</p>
               </div>
-              <button className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant text-on-surface font-label-bold text-label-bold rounded hover:bg-surface-container-lowest shadow-sm transition-all">
-                <span className="material-symbols-outlined text-sm">print</span>
-                Imprimir
-              </button>
             </div>
 
-            {/* Table */}
-            <div className="bg-white border border-outline-variant rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px] border-collapse">
-                  <thead>
-                    <tr className="bg-surface-container-lowest border-b border-outline-variant">
-                      <th className="py-3 px-4 w-36 font-label-bold text-label-bold text-on-surface-variant uppercase text-sm text-left">Hora</th>
-                      {DIAS.map((d) => (
-                        <th key={d} className="py-3 px-3 font-label-bold text-label-bold text-on-surface-variant uppercase text-sm text-center">{d}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {HORAS.map((hora, i) => (
-                      <tr key={hora} className={`border-b border-outline-variant ${i % 2 === 1 ? "bg-surface-container-lowest/50" : "bg-white"}`}>
-                        <td className="py-3 px-4 text-xs font-mono text-on-surface-variant whitespace-nowrap">{hora}</td>
-                        {DIAS.map((dia) => {
-                          const cel = HORARIOS[hora][dia];
-                          return (
-                            <td key={dia} className="py-2 px-2 text-center">
-                              {cel ? (
-                                <div className={`rounded-lg border px-2 py-2 text-left ${cel.color}`}>
-                                  <p className="font-bold text-xs leading-tight">{cel.grupo}</p>
-                                  <p className="text-[11px] leading-tight mt-0.5">{cel.materia}</p>
-                                  <p className="text-[10px] opacity-70 mt-0.5 flex items-center gap-0.5">
-                                    <span className="material-symbols-outlined" style={{ fontSize: "10px" }}>location_on</span>
-                                    {cel.aula}
-                                  </p>
-                                </div>
-                              ) : (
-                                <span className="text-on-surface-variant text-xs">—</span>
-                              )}
-                            </td>
-                          );
-                        })}
+            {loading ? (
+              <p className="text-sm text-on-surface-variant">Cargando horario…</p>
+            ) : horarios.length === 0 ? (
+              <div className="bg-surface-container-high border border-outline-variant rounded-xl p-lg text-center">
+                <p className="text-on-surface-variant">No tienes horario asignado en este ciclo.</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-x-auto">
+                  <table className="w-full min-w-[700px] text-left border-collapse">
+                    <thead>
+                      <tr className="bg-surface-container-high">
+                        <th className="p-sm px-md border-b border-outline-variant text-label-bold font-label-bold text-on-surface-variant w-32">Hora</th>
+                        {DIAS_LABELS.map((day) => (
+                          <th key={day} className="p-sm px-md border-b border-outline-variant text-label-bold font-label-bold text-on-surface-variant text-center">{day}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {horas.map(({ inicio, fin }) => (
+                        <tr key={inicio} className="border-b border-outline-variant last:border-0">
+                          <td className="p-sm px-md text-body-sm font-body-sm text-on-surface-variant align-top whitespace-nowrap">
+                            {inicio.slice(0, 5)} – {fin.slice(0, 5)}
+                          </td>
+                          {[1, 2, 3, 4, 5].map((dia) => {
+                            const slot = horarios.find((h) => h.dia_semana === dia && h.hora_inicio === inicio);
+                            const colorKey = slot ? `${slot.grupo?.nombre ?? ""}|${slot.materia.nombre}` : "";
+                            return (
+                              <td key={dia} className="p-unit align-top">
+                                {slot ? (
+                                  <div className={`rounded border px-2 py-1.5 h-full ${colorMap.get(colorKey) ?? COLORS[0]}`}>
+                                    <p className="font-semibold text-xs leading-snug">{slot.materia.nombre}</p>
+                                    {slot.grupo && <p className="text-[11px] mt-0.5 opacity-70">Grupo {slot.grupo.nombre}</p>}
+                                    {slot.aula && (
+                                      <p className="text-[10px] mt-0.5 opacity-60 flex items-center gap-0.5">
+                                        <span className="material-symbols-outlined" style={{ fontSize: "11px" }}>door_open</span>
+                                        {slot.aula}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="rounded border border-dashed border-outline-variant bg-surface-variant/30 h-full min-h-[60px] flex items-center justify-center text-[11px] text-on-surface-variant/40 select-none">—</div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Leyenda */}
-              <div className="border-t border-outline-variant p-md bg-surface-container-lowest flex flex-wrap gap-md">
-                <p className="text-xs text-on-surface-variant font-medium self-center">Leyenda:</p>
-                {LEYENDA.map((l) => (
-                  <div key={l.label} className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-sm flex-shrink-0 ${l.color}`} />
-                    <span className="text-xs text-on-surface">{l.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+                <div className="mt-md flex flex-wrap gap-sm">
+                  {[...colorMap.entries()].map(([key, color]) => (
+                    <span key={key} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}`}>
+                      {key.replace("|", " · ")}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>

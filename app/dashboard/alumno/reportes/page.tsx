@@ -1,193 +1,192 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDBJFu1eTFJVZnEIpf-KZZvSc_2ffZQGUirP05eqMK12TVBzwigT9EauHtrNVGTd-67_1LsY_0TUiZTt05HcyZXomBqsm1Kv6mJ9lOeQcUvsx9rZTLrY0ASxcVj2CMDkmyby29mUF551eD7wf5moJ9QLCBGlQObDInlM23i5b7BpfDkM3436o3JteJDAyE28ef_KoT1fTG6ZYBYE3KNLPUgFcRV7Y5IldhFMLtpChj4-jm42Hz2QxVhJU5Gbk1KUKsL6zRDWY4Uoiz6";
+interface Calificacion {
+  id: string;
+  parcial: number;
+  calificacion: number;
+  materia: { id: string; nombre: string };
+  ciclo: { id: string; nombre: string } | null;
+  grupo: { nombre: string; semestre: number } | null;
+}
 
-type Semestre = {
-  label: string;
-  periodo: string;
-  promedio: string;
+interface SemestreAgrupado {
+  cicloId: string;
+  cicloNombre: string;
+  semestre: number;
+  grupo: string;
+  materias: { nombre: string; parciales: (number | null)[]; promedio: number | null }[];
+  promedio: number | null;
   aprobadas: number;
   total: number;
-  materias: { nombre: string; calificacion: number; estatus: string }[];
-};
+}
 
-const SEMESTRES: Semestre[] = [
-  {
-    label: "1° Semestre",
-    periodo: "Agosto 2022 – Enero 2023",
-    promedio: "8.90",
-    aprobadas: 5,
-    total: 5,
-    materias: [
-      { nombre: "Matemáticas I", calificacion: 9.0, estatus: "Aprobado" },
-      { nombre: "Física I", calificacion: 8.5, estatus: "Aprobado" },
-      { nombre: "Química I", calificacion: 9.5, estatus: "Aprobado" },
-      { nombre: "Inglés I", calificacion: 9.0, estatus: "Aprobado" },
-      { nombre: "Introducción a la Informática", calificacion: 8.5, estatus: "Aprobado" },
-    ],
-  },
-  {
-    label: "2° Semestre",
-    periodo: "Febrero 2023 – Julio 2023",
-    promedio: "8.40",
-    aprobadas: 5,
-    total: 5,
-    materias: [
-      { nombre: "Matemáticas II", calificacion: 8.0, estatus: "Aprobado" },
-      { nombre: "Física II", calificacion: 7.5, estatus: "Aprobado" },
-      { nombre: "Química II", calificacion: 9.0, estatus: "Aprobado" },
-      { nombre: "Inglés II", calificacion: 9.0, estatus: "Aprobado" },
-      { nombre: "Programación Básica", calificacion: 8.5, estatus: "Aprobado" },
-    ],
-  },
-  {
-    label: "3° Semestre (Actual)",
-    periodo: "Agosto 2023 – Enero 2024",
-    promedio: "—",
-    aprobadas: 0,
-    total: 5,
-    materias: [
-      { nombre: "Matemáticas Aplicadas", calificacion: 0, estatus: "En curso" },
-      { nombre: "Física III", calificacion: 0, estatus: "En curso" },
-      { nombre: "Química Orgánica", calificacion: 0, estatus: "En curso" },
-      { nombre: "Inglés IV", calificacion: 0, estatus: "En curso" },
-      { nombre: "Historia de México", calificacion: 0, estatus: "En curso" },
-    ],
-  },
-];
+function calcPromedio(parciales: (number | null)[]): number | null {
+  const vals = parciales.filter((p): p is number => p !== null);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
 
-function estatusChip(estatus: string) {
+function estatusChip(prom: number | null, enCurso: boolean) {
   const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium";
-  if (estatus === "Aprobado") return `${base} bg-surface-container-high text-primary`;
-  if (estatus === "En curso") return `${base} bg-surface-container text-on-surface-variant border border-outline-variant`;
-  if (estatus === "Reprobado") return `${base} bg-error-container text-on-error-container`;
-  return `${base} bg-surface-variant text-on-surface-variant`;
+  if (enCurso) return <span className={`${base} bg-surface-container text-on-surface-variant border border-outline-variant`}>En curso</span>;
+  if (prom === null) return <span className={`${base} bg-surface-variant text-on-surface-variant`}>Sin datos</span>;
+  if (prom >= 6) return <span className={`${base} bg-surface-container-high text-primary`}>Aprobado</span>;
+  return <span className={`${base} bg-error-container text-on-error-container`}>Reprobado</span>;
 }
 
 export default function ReportesPage() {
-  const promedioAcumulado = (
-    SEMESTRES.filter((s) => s.promedio !== "—")
-      .reduce((acc, s) => acc + parseFloat(s.promedio), 0) /
-    SEMESTRES.filter((s) => s.promedio !== "—").length
-  ).toFixed(2);
+  const [calificaciones, setCalificaciones] = useState<Calificacion[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/calificaciones")
+      .then((r) => r.json())
+      .then((d) => {
+        setCalificaciones(d.calificaciones ?? []);
+        setLoading(false);
+      });
+  }, []);
+
+  // Agrupar calificaciones por ciclo
+  const ciclosMap = new Map<string, SemestreAgrupado>();
+  calificaciones.forEach((c) => {
+    const cicloId = c.ciclo?.id ?? "sin-ciclo";
+    const cicloNombre = c.ciclo?.nombre ?? "Sin ciclo";
+    if (!ciclosMap.has(cicloId)) {
+      ciclosMap.set(cicloId, {
+        cicloId,
+        cicloNombre,
+        semestre: c.grupo?.semestre ?? 0,
+        grupo: c.grupo?.nombre ?? "—",
+        materias: [],
+        promedio: null,
+        aprobadas: 0,
+        total: 0,
+      });
+    }
+    const entry = ciclosMap.get(cicloId)!;
+    let mat = entry.materias.find((m) => m.nombre === c.materia.nombre);
+    if (!mat) {
+      mat = { nombre: c.materia.nombre, parciales: [null, null, null], promedio: null };
+      entry.materias.push(mat);
+    }
+    if (c.parcial >= 1 && c.parcial <= 3) {
+      mat.parciales[c.parcial - 1] = c.calificacion;
+    }
+  });
+
+  ciclosMap.forEach((entry) => {
+    entry.materias.forEach((m) => { m.promedio = calcPromedio(m.parciales); });
+    const promedios = entry.materias.map((m) => m.promedio).filter((p): p is number => p !== null);
+    entry.promedio = promedios.length ? promedios.reduce((a, b) => a + b, 0) / promedios.length : null;
+    entry.total = entry.materias.length;
+    entry.aprobadas = entry.materias.filter((m) => m.promedio !== null && m.promedio >= 6).length;
+  });
+
+  const semestres = [...ciclosMap.values()].sort((a, b) => a.cicloNombre.localeCompare(b.cicloNombre));
+
+  const promedioAcumulado = (() => {
+    const all = semestres.filter((s) => s.promedio !== null).map((s) => s.promedio as number);
+    if (!all.length) return null;
+    return (all.reduce((a, b) => a + b, 0) / all.length).toFixed(2);
+  })();
 
   return (
     <>
-      <DashboardTopbar
-        userImageSrc={AVATAR}
-        userImageAlt="User profile"
-        activeTopLink="dashboard"
-        linkBase="/dashboard/alumno"
-      />
+      <DashboardTopbar userImageAlt="Estudiante" activeTopLink="dashboard" linkBase="/dashboard/alumno" />
 
       <div className="flex pt-16">
         <DashboardSidebar activeLink="reportes" headerVariant="simple" linkBase="/dashboard/alumno" />
 
         <main className="flex-1 md:ml-64 p-md md:p-lg xl:p-xl w-full max-w-container-max mx-auto overflow-x-hidden">
 
-          {/* Page Header */}
           <div className="mb-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md">
             <div>
               <h1 className="font-display-lg text-display-lg text-on-background">Reportes Académicos</h1>
-              <p className="text-on-surface-variant mt-unit">
-                Historial académico por semestre y documentos descargables.
-              </p>
-            </div>
-            <div className="flex gap-sm flex-wrap">
-              <button className="inline-flex items-center gap-2 border border-outline text-on-surface px-md py-sm rounded font-label-bold text-label-bold hover:bg-surface-variant transition-colors shadow-sm">
-                <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
-                Boleta PDF
-              </button>
-              <button className="inline-flex items-center gap-2 border border-outline text-on-surface px-md py-sm rounded font-label-bold text-label-bold hover:bg-surface-variant transition-colors shadow-sm">
-                <span className="material-symbols-outlined text-sm">description</span>
-                Constancia
-              </button>
+              <p className="text-on-surface-variant mt-unit">Historial académico por semestre.</p>
             </div>
           </div>
 
-          {/* Student identity card */}
           <div className="bg-surface border border-outline-variant rounded-xl shadow-sm p-md mb-xl flex flex-col sm:flex-row gap-md items-start sm:items-center">
-            <div className="w-16 h-16 rounded-full bg-surface-container overflow-hidden border border-outline-variant flex-shrink-0">
-              <img alt="Foto alumno" className="w-full h-full object-cover" src={AVATAR} />
-            </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-title-sm text-title-sm text-on-surface">García López, Juan Carlos</h2>
-              <p className="text-body-sm font-body-sm text-on-surface-variant">No. Control: <strong>230145</strong></p>
-              <p className="text-body-sm font-body-sm text-on-surface-variant">Carrera: <strong>Técnico en Informática</strong> · Grupo: <strong>3° IM-A</strong></p>
+              <p className="text-body-sm font-body-sm text-on-surface-variant">Semestres con datos: <strong>{semestres.length}</strong></p>
             </div>
             <div className="flex flex-col items-end gap-unit">
               <span className="text-xs text-on-surface-variant">Promedio acumulado</span>
-              <span className="font-display-lg text-display-lg text-on-surface">{promedioAcumulado}</span>
+              <span className="font-display-lg text-display-lg text-on-surface">
+                {loading ? "…" : promedioAcumulado ?? "—"}
+              </span>
             </div>
           </div>
 
-          {/* Semestres Accordion */}
-          <div className="flex flex-col gap-lg">
-            {SEMESTRES.map((sem, idx) => (
-              <div key={sem.label} className={`bg-surface border rounded-xl shadow-sm overflow-hidden ${idx === SEMESTRES.length - 1 ? "border-primary/40" : "border-outline-variant"}`}>
-                {/* Semestre header */}
-                <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm px-md py-sm ${idx === SEMESTRES.length - 1 ? "bg-primary/5" : "bg-surface-container-high"}`}>
-                  <div>
-                    <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
-                      {sem.label}
-                      {idx === SEMESTRES.length - 1 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-on-primary">
-                          En curso
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">{sem.periodo}</p>
-                  </div>
-                  <div className="flex items-center gap-md">
-                    {sem.promedio !== "—" && (
-                      <div className="text-right">
-                        <p className="text-xs text-on-surface-variant">Promedio</p>
-                        <p className="font-semibold text-on-surface">{sem.promedio}</p>
+          {loading ? (
+            <p className="text-sm text-on-surface-variant">Cargando historial…</p>
+          ) : semestres.length === 0 ? (
+            <div className="bg-surface-container-high border border-outline-variant rounded-xl p-lg text-center">
+              <p className="text-on-surface-variant">Sin calificaciones registradas.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-lg">
+              {semestres.map((sem, idx) => {
+                const esCurso = idx === semestres.length - 1 && sem.promedio === null;
+                return (
+                  <div key={sem.cicloId} className={`bg-surface border rounded-xl shadow-sm overflow-hidden ${esCurso ? "border-primary/40" : "border-outline-variant"}`}>
+                    <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm px-md py-sm ${esCurso ? "bg-primary/5" : "bg-surface-container-high"}`}>
+                      <div>
+                        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
+                          {sem.semestre > 0 ? `${sem.semestre}° Semestre` : sem.cicloNombre}
+                          {esCurso && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-on-primary">En curso</span>
+                          )}
+                        </h3>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{sem.cicloNombre} · {sem.grupo}</p>
                       </div>
-                    )}
-                    <div className="text-right">
-                      <p className="text-xs text-on-surface-variant">Aprobadas</p>
-                      <p className="font-semibold text-on-surface">{sem.aprobadas}/{sem.total}</p>
+                      <div className="flex items-center gap-md">
+                        {sem.promedio !== null && (
+                          <div className="text-right">
+                            <p className="text-xs text-on-surface-variant">Promedio</p>
+                            <p className="font-semibold text-on-surface">{sem.promedio.toFixed(2)}</p>
+                          </div>
+                        )}
+                        <div className="text-right">
+                          <p className="text-xs text-on-surface-variant">Aprobadas</p>
+                          <p className="font-semibold text-on-surface">{sem.aprobadas}/{sem.total}</p>
+                        </div>
+                      </div>
                     </div>
-                    {sem.promedio !== "—" && (
-                      <button className="flex items-center gap-1 text-sm text-primary hover:underline font-medium">
-                        <span className="material-symbols-outlined text-sm">download</span>
-                        PDF
-                      </button>
-                    )}
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-surface-variant/30">
+                        <tr>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Materia</th>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">P1</th>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">P2</th>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">P3</th>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">Promedio</th>
+                          <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">Estatus</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sem.materias.map((m) => (
+                          <tr key={m.nombre} className="odd:bg-surface even:bg-surface-bright border-b border-outline-variant last:border-0 hover:bg-surface-container-lowest transition-colors">
+                            <td className="p-sm px-md text-on-surface font-medium">{m.nombre}</td>
+                            <td className="p-sm px-md text-center">{m.parciales[0] ?? "—"}</td>
+                            <td className="p-sm px-md text-center">{m.parciales[1] ?? "—"}</td>
+                            <td className="p-sm px-md text-center">{m.parciales[2] ?? "—"}</td>
+                            <td className="p-sm px-md text-center font-semibold">{m.promedio !== null ? m.promedio.toFixed(2) : "—"}</td>
+                            <td className="p-sm px-md text-center">{estatusChip(m.promedio, esCurso && m.promedio === null)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-
-                {/* Subjects table */}
-                <table className="w-full text-left font-data-tabular text-data-tabular border-collapse">
-                  <thead className="bg-surface-variant/30">
-                    <tr>
-                      <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Materia</th>
-                      <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">Calificación</th>
-                      <th className="p-sm px-md border-b border-outline-variant font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">Estatus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sem.materias.map((m) => (
-                      <tr key={m.nombre} className="odd:bg-surface even:bg-surface-bright border-b border-outline-variant last:border-0 hover:bg-surface-container-lowest transition-colors">
-                        <td className="p-sm px-md text-on-surface font-medium">{m.nombre}</td>
-                        <td className="p-sm px-md text-center font-semibold text-on-surface">
-                          {m.estatus === "En curso" ? (
-                            <span className="text-on-surface-variant select-none">—</span>
-                          ) : m.calificacion}
-                        </td>
-                        <td className="p-sm px-md text-center">
-                          <span className={estatusChip(m.estatus)}>{m.estatus}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </main>
       </div>
     </>

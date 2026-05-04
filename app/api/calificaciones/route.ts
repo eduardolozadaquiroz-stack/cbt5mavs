@@ -33,22 +33,11 @@ export async function GET(request: NextRequest) {
   // Filtro por rol: cada rol solo ve lo que le corresponde (defensa en profundidad)
   if (user.rol === "alumno") {
     // Obtener alumno_id del usuario
-    const { data: alumnoData } = await admin
-      .from("alumnos")
-      .select("id")
-      .eq("usuario_id", user.db_id)
-      .single();
-    if (!alumnoData) return NextResponse.json({ calificaciones: [] });
-    query = query.eq("alumno_id", alumnoData.id);
+    // alumnos.id = usuarios.id (PK compartida)
+    query = query.eq("alumno_id", user.db_id);
   } else if (user.rol === "maestro") {
-    // Solo calificaciones que el maestro registró
-    const { data: maestroData } = await admin
-      .from("maestros")
-      .select("id")
-      .eq("usuario_id", user.db_id)
-      .single();
-    if (!maestroData) return NextResponse.json({ calificaciones: [] });
-    query = query.eq("maestro_id", maestroData.id);
+    // maestros.id = usuarios.id (PK compartida)
+    query = query.eq("maestro_id", user.db_id);
     if (alumno_id && isUUID(alumno_id)) query = query.eq("alumno_id", alumno_id);
     if (grupo_id  && isUUID(grupo_id))  query = query.eq("grupo_id",  grupo_id);
   } else if (user.rol === "admin") {

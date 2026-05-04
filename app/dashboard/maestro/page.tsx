@@ -1,17 +1,76 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEzpJcll0X5d9jtID0KZQY9DQZRRq2urTYr7OTdd5wbN3bwTITJS_udArelmyFwKHp52jZMTZigPK27koZBzrOk8apUTBoENBTNSQ_9UV341OiiIG2ayvR2P6RSKF_-zlJhwraxvKTWP30vx0XqFtP3QHDJZtZ5q0FsLnV0k_-5Y9u3x3nfcJe2qD7R3eQk7iDmNl6Al0VZjLNgQ06SdDzzwjB1yyZU_u4Aiu24ZTFsCj_CbalIFeIYzf8-mCoS4Y8hn9Ux-Vpjacf";
+interface HorarioSlot {
+  grupo: { id: string; nombre: string; carrera: { nombre: string } | null } | null;
+  materia: { nombre: string } | null;
+}
+
+interface GrupoStats {
+  id: string;
+  nombre: string;
+  carrera: string;
+  alumnos: number;
+}
+
+interface Aviso {
+  id: string;
+  titulo: string;
+  tipo: string;
+  fecha_publicacion: string;
+}
 
 export default function DashboardMaestroPage() {
+  const [grupos, setGrupos] = useState<GrupoStats[]>([]);
+  const [totalAlumnos, setTotalAlumnos] = useState(0);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/avisos")
+      .then((r) => r.json())
+      .then((d) => setAvisos((d.avisos ?? []).slice(0, 4)));
+
+    fetch("/api/horarios")
+      .then((r) => r.json())
+      .then((d) => {
+        const slots: HorarioSlot[] = d.horarios ?? [];
+        // Deduplicar grupos del horario del maestro
+        const grupoMap = new Map<string, GrupoStats>();
+        slots.forEach((s) => {
+          if (!s.grupo) return;
+          if (!grupoMap.has(s.grupo.id)) {
+            grupoMap.set(s.grupo.id, {
+              id: s.grupo.id,
+              nombre: s.grupo.nombre,
+              carrera: s.grupo.carrera?.nombre ?? "—",
+              alumnos: 0,
+            });
+          }
+        });
+        setGrupos([...grupoMap.values()]);
+        setLoading(false);
+      });
+
+    // Contar alumnos de grupos del maestro
+    fetch("/api/grupos?rol=maestro")
+      .then((r) => r.json())
+      .then((d) => {
+        const gs = d.grupos ?? [];
+        const total = gs.reduce((a: number, g: { alumnos_count?: number }) => a + (g.alumnos_count ?? 0), 0);
+        setTotalAlumnos(total);
+      });
+  }, []);
+
   return (
     <>
-      <LoadingSpinner duration={2000} />
+      {loading && <LoadingSpinner duration={1500} />}
       <DashboardTopbar
-        userImageSrc={AVATAR}
-        userImageAlt="User profile"
+        userImageAlt="Maestro"
         linkBase="/dashboard/maestro"
       />
 
@@ -21,44 +80,54 @@ export default function DashboardMaestroPage() {
         <main className="pt-0 md:pl-64 w-full pb-xl">
           <div className="max-w-[1280px] mx-auto p-md lg:p-lg">
 
-            {/* Page Header */}
             <div className="mb-lg">
-              <h1 className="font-display-lg text-display-lg text-on-background">Bienvenido, Prof. Ramos</h1>
-              <p className="text-on-surface-variant mt-unit">Ciclo 2023-2024 · Turno Matutino</p>
+              <h1 className="font-display-lg text-display-lg text-on-background">Panel del Docente</h1>
+              <p className="text-on-surface-variant mt-unit">Resumen de tu carga académica actual.</p>
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
-              {[
-                { icon: "groups", label: "Grupos Asignados", value: "3", sub: "Ciclo actual", color: "text-primary bg-surface-container" },
-                { icon: "person", label: "Alumnos Totales", value: "87", sub: "Entre todos los grupos", color: "text-secondary bg-surface-container-high" },
-                { icon: "grade", label: "Capturas Pendientes", value: "1", sub: "Tercer Parcial abierto", color: "text-[#856404] bg-[#fff3cd]" },
-                { icon: "timer", label: "Cierre de Captura", value: "5 días", sub: "Vence 3 de mayo", color: "text-error bg-error-container" },
-              ].map((c) => (
-                <div key={c.label} className="bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.color}`}>
-                    <span className="material-symbols-outlined text-sm">{c.icon}</span>
-                  </div>
-                  <span className="font-display-lg text-display-lg text-on-surface">{c.value}</span>
-                  <div>
-                    <p className="font-label-bold text-label-bold text-on-surface text-xs">{c.label}</p>
-                    <p className="text-xs text-on-surface-variant">{c.sub}</p>
-                  </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-md mb-xl">
+              <div className="bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-primary bg-surface-container">
+                  <span className="material-symbols-outlined text-sm">groups</span>
                 </div>
-              ))}
+                <span className="font-display-lg text-display-lg text-on-surface">{loading ? "…" : grupos.length}</span>
+                <div>
+                  <p className="font-label-bold text-label-bold text-on-surface text-xs">Grupos Asignados</p>
+                  <p className="text-xs text-on-surface-variant">Ciclo actual</p>
+                </div>
+              </div>
+              <div className="bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-secondary bg-surface-container-high">
+                  <span className="material-symbols-outlined text-sm">person</span>
+                </div>
+                <span className="font-display-lg text-display-lg text-on-surface">{loading ? "…" : totalAlumnos || "—"}</span>
+                <div>
+                  <p className="font-label-bold text-label-bold text-on-surface text-xs">Alumnos Totales</p>
+                  <p className="text-xs text-on-surface-variant">Entre todos los grupos</p>
+                </div>
+              </div>
+              <div className="col-span-2 lg:col-span-1 bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-primary bg-surface-container">
+                  <span className="material-symbols-outlined text-sm">grade</span>
+                </div>
+                <span className="font-display-lg text-display-lg text-on-surface">—</span>
+                <div>
+                  <p className="font-label-bold text-label-bold text-on-surface text-xs">Materias</p>
+                  <p className="text-xs text-on-surface-variant">Ver horario para detalle</p>
+                </div>
+              </div>
             </div>
 
-            {/* Quick Access + Upcoming */}
+            {/* Quick Access */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-md mb-xl">
-
-              {/* Quick Access */}
               <div className="lg:col-span-2 bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
                 <div className="p-md border-b border-outline-variant">
                   <h2 className="font-title-sm text-title-sm text-on-surface">Acceso Rápido</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-md p-md">
                   {[
-                    { href: "/dashboard/maestro/calificaciones", icon: "grade", title: "Captura de Calificaciones", desc: "Ingresa las calificaciones del 3er Parcial", color: "bg-primary/5 border-primary/20 hover:border-primary/40" },
+                    { href: "/dashboard/maestro/calificaciones", icon: "grade", title: "Captura de Calificaciones", desc: "Ingresa las calificaciones por parcial", color: "bg-primary/5 border-primary/20 hover:border-primary/40" },
                     { href: "/dashboard/maestro/asistencias", icon: "rule", title: "Registro de Asistencia", desc: "Pasa lista a tus grupos del día de hoy", color: "bg-secondary/5 border-secondary/20 hover:border-secondary/40" },
                     { href: "/dashboard/maestro/grupos", icon: "groups", title: "Mis Grupos", desc: "Consulta los alumnos de cada grupo", color: "bg-surface-container border-outline-variant hover:border-primary/30" },
                     { href: "/dashboard/maestro/reportes", icon: "analytics", title: "Reportes", desc: "Índices de reprobación y asistencia", color: "bg-surface-container border-outline-variant hover:border-primary/30" },
@@ -76,68 +145,30 @@ export default function DashboardMaestroPage() {
                 </div>
               </div>
 
-              {/* Upcoming Deadlines */}
+              {/* Grupos del maestro */}
               <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-                <div className="p-md border-b border-outline-variant">
-                  <h2 className="font-title-sm text-title-sm text-on-surface">Próximos Eventos</h2>
+                <div className="p-md border-b border-outline-variant flex justify-between items-center">
+                  <h2 className="font-title-sm text-title-sm text-on-surface">Mis Grupos</h2>
+                  <a href="/dashboard/maestro/grupos" className="text-sm text-primary hover:underline font-medium">Ver todos</a>
                 </div>
-                <ul className="divide-y divide-outline-variant">
-                  {[
-                    { fecha: "3 May", titulo: "Cierre de captura Parcial 3", tipo: "urgente", tipoClass: "bg-error-container text-on-error-container" },
-                    { fecha: "5 May", titulo: "Entrega de rúbricas 301-G", tipo: "académico", tipoClass: "bg-primary-fixed text-on-primary-fixed" },
-                    { fecha: "15 May", titulo: "Suspensión – Día del Maestro", tipo: "institucional", tipoClass: "bg-secondary-fixed text-on-secondary-fixed" },
-                    { fecha: "20 May", titulo: "Inicio reinscripciones 2024-2025", tipo: "administrativo", tipoClass: "bg-surface-container text-primary" },
-                  ].map((e) => (
-                    <li key={e.titulo} className="flex items-start gap-sm px-md py-sm hover:bg-surface-variant/40 transition-colors">
-                      <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-surface-container flex flex-col items-center justify-center text-center border border-outline-variant">
-                        <span className="text-[10px] font-bold text-primary leading-none">{e.fecha.split(" ")[1]}</span>
-                        <span className="text-[11px] text-on-surface-variant leading-none">{e.fecha.split(" ")[0]}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-on-surface truncate">{e.titulo}</p>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium mt-0.5 ${e.tipoClass}`}>
-                          {e.tipo}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Groups Summary */}
-            <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-              <div className="p-md border-b border-outline-variant flex justify-between items-center">
-                <h2 className="font-title-sm text-title-sm text-on-surface">Mis Grupos</h2>
-                <a href="/dashboard/maestro/grupos" className="text-sm text-primary hover:underline font-medium flex items-center gap-1">
-                  Ver todos
-                  <span className="material-symbols-outlined text-sm">chevron_right</span>
-                </a>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-outline-variant">
-                {[
-                  { grupo: "301-G", carrera: "Gastronomía", alumnos: 32, promedio: "7.9", reprobados: 4 },
-                  { grupo: "302-G", carrera: "Gastronomía", alumnos: 28, promedio: "8.3", reprobados: 2 },
-                  { grupo: "301-I", carrera: "Informática", alumnos: 27, promedio: "8.6", reprobados: 1 },
-                ].map((g) => (
-                  <a key={g.grupo} href="/dashboard/maestro/calificaciones" className="p-md hover:bg-surface-variant/40 transition-colors flex flex-col gap-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-title-sm text-title-sm text-on-surface">{g.grupo}</span>
-                      <span className="text-xs text-on-surface-variant">{g.alumnos} alumnos</span>
-                    </div>
-                    <p className="text-xs text-on-surface-variant">{g.carrera}</p>
-                    <div className="flex items-center justify-between mt-unit">
-                      <div>
-                        <p className="text-xs text-on-surface-variant">Promedio</p>
-                        <p className="font-semibold text-on-surface">{g.promedio}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-on-surface-variant">Reprobados</p>
-                        <p className={`font-semibold ${g.reprobados > 2 ? "text-error" : "text-on-surface"}`}>{g.reprobados}</p>
-                      </div>
-                    </div>
-                  </a>
-                ))}
+                {loading ? (
+                  <p className="p-md text-sm text-on-surface-variant">Cargando…</p>
+                ) : grupos.length === 0 ? (
+                  <p className="p-md text-sm text-on-surface-variant">Sin grupos asignados.</p>
+                ) : (
+                  <ul className="divide-y divide-outline-variant">
+                    {grupos.map((g) => (
+                      <li key={g.id}>
+                        <a href="/dashboard/maestro/calificaciones" className="flex items-center justify-between px-md py-sm hover:bg-surface-variant/40 transition-colors">
+                          <div>
+                            <p className="font-label-bold text-label-bold text-on-surface">{g.nombre}</p>
+                            <p className="text-xs text-on-surface-variant">{g.carrera}</p>
+                          </div>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 

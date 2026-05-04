@@ -1,38 +1,75 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEzpJcll0X5d9jtID0KZQY9DQZRRq2urTYr7OTdd5wbN3bwTITJS_udArelmyFwKHp52jZMTZigPK27koZBzrOk8apUTBoENBTNSQ_9UV341OiiIG2ayvR2P6RSKF_-zlJhwraxvKTWP30vx0XqFtP3QHDJZtZ5q0FsLnV0k_-5Y9u3x3nfcJe2qD7R3eQk7iDmNl6Al0VZjLNgQ06SdDzzwjB1yyZU_u4Aiu24ZTFsCj_CbalIFeIYzf8-mCoS4Y8hn9Ux-Vpjacf";
+interface AlumnoGrupo {
+  alumno_id: string;
+  matricula: string;
+  nombre: string;
+  promedio_general: number | null;
+}
 
-const GRUPOS_STATS = [
-  { grupo: "301-G", carrera: "Gastronomía", alumnos: 32, promedio: 7.9, reprobados: 4, asistencia: 88 },
-  { grupo: "302-G", carrera: "Gastronomía", alumnos: 28, promedio: 8.3, reprobados: 2, asistencia: 92 },
-  { grupo: "301-I", carrera: "Informática",  alumnos: 27, promedio: 8.6, reprobados: 1, asistencia: 95 },
-];
+interface GrupoStats {
+  id: string;
+  nombre: string;
+  carrera: string;
+  alumnos: AlumnoGrupo[];
+  materias: string[];
+  reprobados: number;
+}
 
-const TENDENCIA = [
-  { parcial: "Parcial 1", "301-G": 8.1, "302-G": 8.4, "301-I": 8.7 },
-  { parcial: "Parcial 2", "301-G": 7.8, "302-G": 8.2, "301-I": 8.5 },
-  { parcial: "Parcial 3", "301-G": null, "302-G": null, "301-I": null },
-];
-
-function barWidth(val: number, max = 10) {
-  return `${(val / max) * 100}%`;
+interface Calificacion {
+  alumno_id: string;
+  parcial: number;
+  calificacion: number;
+  grupo_id: string;
 }
 
 export default function ReportesMaestroPage() {
-  const totalAlumnos = GRUPOS_STATS.reduce((a, g) => a + g.alumnos, 0);
-  const totalReprobados = GRUPOS_STATS.reduce((a, g) => a + g.reprobados, 0);
-  const promedioGlobal = (GRUPOS_STATS.reduce((a, g) => a + g.promedio * g.alumnos, 0) / totalAlumnos).toFixed(1);
-  const asistenciaMedia = Math.round(GRUPOS_STATS.reduce((a, g) => a + g.asistencia, 0) / GRUPOS_STATS.length);
+  const [grupos, setGrupos] = useState<GrupoStats[]>([]);
+  const [calificaciones, setCalificaciones] = useState<Calificacion[]>([]);
+  const [asistencias, setAsistencias] = useState<{ alumno_id: string; estatus: string; grupo_id: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/maestro/mis-grupos").then((r) => r.json()),
+      fetch("/api/calificaciones").then((r) => r.json()),
+      fetch("/api/asistencias").then((r) => r.json()),
+    ]).then(([gData, cData, aData]) => {
+      setGrupos(gData.grupos ?? []);
+      setCalificaciones(cData.calificaciones ?? []);
+      setAsistencias(aData.asistencias ?? []);
+      setLoading(false);
+    });
+  }, []);
+
+  // Estadísticas globales
+  const totalAlumnos = grupos.reduce((a, g) => a + g.alumnos.length, 0);
+  const totalReprobados = grupos.reduce((a, g) => a + g.reprobados, 0);
+
+  const calsNumericas = calificaciones.filter((c) => typeof c.calificacion === "number");
+  const promedioGlobal = calsNumericas.length > 0
+    ? (calsNumericas.reduce((a, c) => a + c.calificacion, 0) / calsNumericas.length).toFixed(1)
+    : "—";
+
+  const asistenciasPorGrupo = grupos.map((g) => {
+    const asGrupo = asistencias.filter((a) => a.grupo_id === g.id);
+    const pct = asGrupo.length > 0
+      ? Math.round((asGrupo.filter((a) => a.estatus === "P").length / asGrupo.length) * 100)
+      : null;
+    return { ...g, asistenciaPct: pct };
+  });
+
+  const asistenciaMedia = asistenciasPorGrupo.filter((g) => g.asistenciaPct !== null).length > 0
+    ? Math.round(asistenciasPorGrupo.filter((g) => g.asistenciaPct !== null).reduce((a, g) => a + (g.asistenciaPct ?? 0), 0) / asistenciasPorGrupo.filter((g) => g.asistenciaPct !== null).length)
+    : null;
 
   return (
     <>
-      <DashboardTopbar
-        userImageSrc={AVATAR}
-        userImageAlt="User profile"
-        linkBase="/dashboard/maestro"
-      />
+      <DashboardTopbar userImageAlt="Maestro" linkBase="/dashboard/maestro" />
 
       <div className="flex pt-16 min-h-screen bg-surface-bright">
         <DashboardSidebar activeLink="reportes" headerVariant="cbt-circle" linkBase="/dashboard/maestro" />
@@ -40,142 +77,92 @@ export default function ReportesMaestroPage() {
         <main className="pt-0 md:pl-64 w-full pb-xl">
           <div className="max-w-[1280px] mx-auto p-md lg:p-lg">
 
-            {/* Page Header */}
-            <div className="mb-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="font-headline-md text-headline-md text-on-background">Reportes</h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                  Estadísticas de calificaciones y asistencia de tus grupos. Ciclo 2023-2024.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button className="px-4 py-2 bg-white border border-outline-variant text-on-surface font-label-bold text-label-bold rounded hover:bg-surface-container-lowest shadow-sm transition-all flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
-                  Exportar PDF
-                </button>
-                <button className="px-4 py-2 bg-primary text-on-primary font-label-bold text-label-bold rounded hover:bg-primary-container shadow-sm transition-all flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">table_view</span>
-                  Exportar Excel
-                </button>
-              </div>
+            <div className="mb-lg">
+              <h2 className="font-headline-md text-headline-md text-on-background">Reportes</h2>
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Estadísticas de calificaciones y asistencia de tus grupos.</p>
             </div>
 
-            {/* Global Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
-              {[
-                { icon: "person", label: "Alumnos Totales", value: String(totalAlumnos), color: "text-primary bg-surface-container" },
-                { icon: "grade", label: "Promedio Global", value: promedioGlobal, color: "text-secondary bg-surface-container-high" },
-                { icon: "close", label: "Reprobados", value: String(totalReprobados), color: "text-error bg-error-container" },
-                { icon: "event_available", label: "Asistencia Media", value: `${asistenciaMedia}%`, color: "text-[#856404] bg-[#fff3cd]" },
-              ].map((c) => (
-                <div key={c.label} className="bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.color}`}>
-                    <span className="material-symbols-outlined text-sm">{c.icon}</span>
-                  </div>
-                  <span className="font-display-lg text-display-lg text-on-surface">{c.value}</span>
-                  <p className="text-xs text-on-surface-variant">{c.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Two columns: bar chart + trend table */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-md mb-xl">
-
-              {/* Promedio por grupo (horizontal bars) */}
-              <div className="bg-white border border-outline-variant rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-                <div className="p-md border-b border-outline-variant bg-surface-bright">
-                  <h3 className="font-title-sm text-title-sm text-on-surface">Promedio por Grupo</h3>
-                </div>
-                <div className="p-md flex flex-col gap-md">
-                  {GRUPOS_STATS.map((g) => (
-                    <div key={g.grupo}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-on-surface">{g.grupo} · {g.carrera}</span>
-                        <span className="font-data-tabular font-semibold text-on-surface">{g.promedio}</span>
+            {loading ? (
+              <p className="text-sm text-on-surface-variant">Cargando…</p>
+            ) : (
+              <>
+                {/* Stats globales */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
+                  {[
+                    { icon: "person", label: "Alumnos Totales", value: String(totalAlumnos), color: "text-primary bg-surface-container" },
+                    { icon: "grade", label: "Promedio Global", value: promedioGlobal, color: "text-secondary bg-surface-container-high" },
+                    { icon: "close", label: "Reprobados", value: String(totalReprobados), color: "text-error bg-error-container" },
+                    { icon: "event_available", label: "Asistencia Media", value: asistenciaMedia !== null ? `${asistenciaMedia}%` : "—", color: "text-yellow-800 bg-yellow-50" },
+                  ].map((c) => (
+                    <div key={c.label} className="bg-surface border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.color}`}>
+                        <span className="material-symbols-outlined text-sm">{c.icon}</span>
                       </div>
-                      <div className="w-full bg-surface-container rounded-full h-3 overflow-hidden">
-                        <div
-                          className={`h-3 rounded-full transition-all ${g.promedio >= 8 ? "bg-primary" : g.promedio >= 7 ? "bg-[#ffc107]" : "bg-error"}`}
-                          style={{ width: barWidth(g.promedio) }}
-                        />
-                      </div>
-                      <p className="text-xs text-on-surface-variant mt-0.5">{g.reprobados} reprobados · {g.alumnos} alumnos</p>
+                      <span className="font-display-lg text-display-lg text-on-surface">{c.value}</span>
+                      <p className="text-xs text-on-surface-variant">{c.label}</p>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Asistencia por grupo */}
-              <div className="bg-white border border-outline-variant rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-                <div className="p-md border-b border-outline-variant bg-surface-bright">
-                  <h3 className="font-title-sm text-title-sm text-on-surface">Asistencia por Grupo</h3>
-                </div>
-                <div className="p-md flex flex-col gap-md">
-                  {GRUPOS_STATS.map((g) => (
-                    <div key={g.grupo}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-on-surface">{g.grupo} · {g.carrera}</span>
-                        <span className="font-data-tabular font-semibold text-on-surface">{g.asistencia}%</span>
+                {/* Por grupo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-md">
+                  {asistenciasPorGrupo.map((g) => {
+                    const calsGrupo = calificaciones.filter((c) => c.grupo_id === g.id);
+                    const promedioGrupo = calsGrupo.length > 0
+                      ? (calsGrupo.reduce((a, c) => a + c.calificacion, 0) / calsGrupo.length).toFixed(1)
+                      : "—";
+                    return (
+                      <div key={g.id} className="bg-white border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-md">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-title-md text-title-md text-on-surface">{g.nombre}</h3>
+                            <p className="text-xs text-on-surface-variant mt-0.5">{g.carrera}</p>
+                          </div>
+                          <span className="text-xs bg-surface-container-high px-2 py-0.5 rounded-full text-on-surface-variant">
+                            {g.alumnos.length} alumnos
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-surface-container-lowest rounded-lg p-2">
+                            <p className="font-semibold text-lg text-on-surface">{promedioGrupo}</p>
+                            <p className="text-xs text-on-surface-variant">Promedio</p>
+                          </div>
+                          <div className="bg-error-container rounded-lg p-2">
+                            <p className="font-semibold text-lg text-error">{g.reprobados}</p>
+                            <p className="text-xs text-on-error-container">Reprobados</p>
+                          </div>
+                          <div className="bg-yellow-50 rounded-lg p-2">
+                            <p className="font-semibold text-lg text-yellow-800">{g.asistenciaPct !== null ? `${g.asistenciaPct}%` : "—"}</p>
+                            <p className="text-xs text-yellow-700">Asistencia</p>
+                          </div>
+                        </div>
+                        {/* Top alumnos en riesgo */}
+                        {g.alumnos.filter((a) => a.promedio_general !== null && a.promedio_general < 6).length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-error mb-1">En riesgo:</p>
+                            <ul className="text-xs text-on-surface-variant space-y-0.5">
+                              {g.alumnos
+                                .filter((a) => a.promedio_general !== null && (a.promedio_general ?? 10) < 6)
+                                .slice(0, 3)
+                                .map((a) => (
+                                  <li key={a.alumno_id} className="flex justify-between">
+                                    <span>{a.nombre}</span>
+                                    <span className="text-error font-medium">{a.promedio_general?.toFixed(1)}</span>
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                      <div className="w-full bg-surface-container rounded-full h-3 overflow-hidden">
-                        <div
-                          className={`h-3 rounded-full transition-all ${g.asistencia >= 90 ? "bg-secondary" : g.asistencia >= 80 ? "bg-[#ffc107]" : "bg-error"}`}
-                          style={{ width: `${g.asistencia}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        {g.asistencia >= 90 ? "Dentro del límite" : "Riesgo — revisar faltas"}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
-
-            {/* Tendencia por Parcial */}
-            <div className="bg-white border border-outline-variant rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-              <div className="p-md border-b border-outline-variant bg-surface-bright flex items-center justify-between">
-                <h3 className="font-title-sm text-title-sm text-on-surface">Tendencia por Parcial</h3>
-                <span className="text-xs text-on-surface-variant">Promedio del grupo</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[500px] text-left border-collapse font-data-tabular text-data-tabular">
-                  <thead className="bg-surface-container-lowest border-b border-outline-variant">
-                    <tr>
-                      <th className="py-3 px-4 font-label-bold text-label-bold text-on-surface-variant uppercase text-xs">Parcial</th>
-                      {GRUPOS_STATS.map((g) => (
-                        <th key={g.grupo} className="py-3 px-4 font-label-bold text-label-bold text-on-surface-variant uppercase text-xs text-center">{g.grupo}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TENDENCIA.map((row, i) => (
-                      <tr key={row.parcial} className={`border-b border-outline-variant hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? "bg-surface-container-lowest" : "bg-white"}`}>
-                        <td className="py-3 px-4 font-medium text-on-surface">{row.parcial}</td>
-                        {GRUPOS_STATS.map((g) => {
-                          const val = row[g.grupo as keyof typeof row] as number | null;
-                          return (
-                            <td key={g.grupo} className="py-3 px-4 text-center">
-                              {val !== null ? (
-                                <span className={`font-semibold ${val >= 8 ? "text-primary" : val >= 7 ? "text-[#856404]" : "text-error"}`}>
-                                  {val}
-                                </span>
-                              ) : (
-                                <span className="text-on-surface-variant">En curso</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+              </>
+            )}
           </div>
         </main>
       </div>
     </>
   );
 }
+

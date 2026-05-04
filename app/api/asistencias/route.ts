@@ -37,21 +37,11 @@ export async function GET(request: NextRequest) {
     .order("fecha", { ascending: false });
 
   if (user.rol === "alumno") {
-    const { data: alumnoData } = await admin
-      .from("alumnos")
-      .select("id")
-      .eq("usuario_id", user.db_id)
-      .single();
-    if (!alumnoData) return NextResponse.json({ asistencias: [] });
-    query = query.eq("alumno_id", alumnoData.id);
+    // alumnos.id = usuarios.id (PK compartida)
+    query = query.eq("alumno_id", user.db_id);
   } else if (user.rol === "maestro") {
-    const { data: maestroData } = await admin
-      .from("maestros")
-      .select("id")
-      .eq("usuario_id", user.db_id)
-      .single();
-    if (!maestroData) return NextResponse.json({ asistencias: [] });
-    query = query.eq("maestro_id", maestroData.id);
+    // maestros.id = usuarios.id (PK compartida)
+    query = query.eq("maestro_id", user.db_id);
     if (grupo_id   && isUUID(grupo_id))   query = query.eq("grupo_id",   grupo_id);
     if (materia_id && isUUID(materia_id)) query = query.eq("materia_id", materia_id);
   } else if (user.rol === "admin") {
