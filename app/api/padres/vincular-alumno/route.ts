@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
   const admin = createSupabaseAdminClient();
 
   // Buscar alumno por los 3 factores — sin filtros parciales para no dar pistas (OWASP A01)
-  const { data: alumno } = await admin
+  // NOTA: alumnos.id ES el mismo UUID que usuarios.id (PK compartida, no hay columna usuario_id)
+  const { data: alumno, error: queryError } = await admin
     .from("alumnos")
     .select(`
       id,
       matricula,
       curp,
       fecha_nacimiento,
-      usuario_id,
       usuarios!inner(nombre, correo:email),
       carrera:carreras(nombre)
     `)
@@ -98,6 +98,11 @@ export async function POST(request: NextRequest) {
     .eq("curp", curp)
     .eq("fecha_nacimiento", fecha_nacimiento)
     .maybeSingle();
+
+  if (queryError) {
+    log.error("Error en query de búsqueda de alumno", { message: queryError.message });
+    return NextResponse.json({ error: "Error interno al verificar datos" }, { status: 500 });
+  }
 
   if (!alumno) {
     // A07: respuesta genérica — no revelar cuál factor falló
