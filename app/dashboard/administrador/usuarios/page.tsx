@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-import { getBrowserClient } from "@/lib/supabase-browser";
-
 interface Carrera { id: string; nombre: string; clave: string; }
 
 const BASE = "/dashboard/administrador";
@@ -79,11 +77,9 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   const [carreras, setCarreras] = useState<Carrera[]>([]);
 
   useEffect(() => {
-    getBrowserClient()
-      .from("carreras")
-      .select("id, nombre, clave")
-      .eq("activa", true)
-      .then(({ data }) => setCarreras(data ?? []));
+    fetch("/api/carreras")
+      .then((r) => r.json())
+      .then((d) => setCarreras(d.carreras ?? []));
   }, []);
 
   const pw = form.pw;
