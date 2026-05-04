@@ -99,9 +99,10 @@ export async function POST(request: NextRequest) {
     // Determinar causa probable
     let msg = "Error al crear usuario en la base de datos";
     if (dbError.code === "23505") {
-      // Unique violation
-      if (dbError.message?.includes("correo")) msg = "El correo ya existe en el sistema";
-      else if (dbError.message?.includes("auth_id")) msg = "Ya existe un usuario con esa cuenta de autenticación";
+      // Unique violation — detectar qué campo causó el duplicado
+      const msg23505 = dbError.message ?? "";
+      if (msg23505.includes("email"))    msg = "El correo ya existe en el sistema";
+      else if (msg23505.includes("auth_id")) msg = "Ya existe un usuario con esa cuenta de autenticación";
       else msg = "Ya existe un registro duplicado";
     } else if (dbError.code === "23503") {
       msg = "Error de referencia: verifique que los datos relacionados existan";
