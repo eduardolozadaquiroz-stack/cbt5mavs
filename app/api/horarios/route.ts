@@ -29,16 +29,39 @@ export async function GET(request: NextRequest) {
   let query = admin.from("horarios").select(selectFields).order("dia_semana").order("hora_inicio");
 
   if (user.rol === "alumno") {
-    // alumnos.id = usuarios.id = user.db_id — usar directamente como alumno_id en alumno_grupo
+    // Verificar si el alumno está en prácticas o servicio social
     const { data: alumnoData } = await admin
+      .from("alumnos")
+      .select("estatus")
+      .eq("id", user.db_id)
+      .single();
+
+    if (alumnoData?.estatus === "practicas" || alumnoData?.estatus === "servicio_social") {
+      // Obtener detalles de la actividad activa
+      const { data: actividad } = await admin
+        .from("alumno_actividad_especial")
+        .select("tipo, empresa, responsable, fecha_inicio, fecha_fin, horas_requeridas, horas_cumplidas")
+        .eq("alumno_id", user.db_id)
+        .eq("estatus", "activo")
+        .maybeSingle();
+
+      return NextResponse.json({
+        horarios: [],
+        estatus_especial: alumnoData.estatus,
+        actividad: actividad ?? null,
+      });
+    }
+
+    // alumnos.id = usuarios.id = user.db_id — usar directamente como alumno_id en alumno_grupo
+    const { data: alumnoGrupo } = await admin
       .from("alumno_grupo")
       .select("grupo_id")
       .eq("alumno_id", user.db_id)
       .eq("activo", true)
       .maybeSingle();
 
-    if (!alumnoData) return NextResponse.json({ horarios: [] });
-    query = query.eq("grupo_id", alumnoData.grupo_id);
+    if (!alumnoGrupo) return NextResponse.json({ horarios: [], estatus_especial: null });
+    query = query.eq("grupo_id", alumnoGrupo.grupo_id);
 
   } else if (user.rol === "maestro") {
     // maestros.id = usuarios.id = user.db_id — usar directamente como maestro_id en horarios
