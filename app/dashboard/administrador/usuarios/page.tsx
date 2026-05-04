@@ -109,6 +109,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
       if (!form.curp.trim()) e.curp = "El CURP es obligatorio.";
       else if (form.curp.trim().length !== 18) e.curp = "El CURP debe tener exactamente 18 caracteres.";
       if (!form.fecha_nacimiento) e.fecha_nacimiento = "La fecha de nacimiento es obligatoria.";
+      if (!form.carrera_id) e.carrera_id = "La carrera es obligatoria.";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -262,11 +263,12 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Carrera <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
-                  <select value={form.carrera_id} onChange={(e) => set("carrera_id", e.target.value)} className={`${inputBase} ${inputOk}`}>
-                    <option value="">Sin asignar</option>
-                    {carreras.map((c) => <option key={c.id} value={c.id}>{c.nombre} ({c.clave})</option>)}
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Carrera <span className="text-red-500">*</span></label>
+                  <select value={form.carrera_id} onChange={(e) => set("carrera_id", e.target.value)} className={`${inputBase} ${errors.carrera_id ? inputErr : inputOk}`}>
+                    <option value="" disabled>Selecciona una carrera</option>
+                    {carreras.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
+                  {errors.carrera_id && <p className="text-xs text-red-600 mt-1">{errors.carrera_id}</p>}
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Semestre</label>

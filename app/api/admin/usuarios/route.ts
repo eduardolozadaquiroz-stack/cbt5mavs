@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
     const semestre_actual = typeof body.semestre_actual === "number" ? body.semestre_actual : 1;
     const sexo            = sanitize(body.sexo ?? "", 2);
 
-    if (!matricula || !curp || !fecha_nacimiento) {
+    if (!matricula || !curp || !fecha_nacimiento || !carrera_id) {
       // Rollback
       await admin.auth.admin.deleteUser(authData.user.id);
       await admin.from("usuarios").delete().eq("id", dbUser.id);
       return NextResponse.json(
-        { error: "matrícula, CURP y fecha de nacimiento son requeridos para alumnos" },
+        { error: "matrícula, CURP, fecha de nacimiento y carrera son requeridos para alumnos" },
         { status: 400 }
       );
     }
