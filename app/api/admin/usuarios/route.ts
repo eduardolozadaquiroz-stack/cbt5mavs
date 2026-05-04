@@ -112,31 +112,57 @@ export async function POST(request: NextRequest) {
 
   // Si es alumno, crear registro en tabla alumnos
   if (rol === "alumno") {
-    const matricula  = sanitize(body.matricula ?? "", 20);
-    const carrera_id = typeof body.carrera_id === "string" ? body.carrera_id.trim() : null;
-    // Solo insertar si se proporciona matrícula; curp y fecha_nacimiento son requeridos
-    // por el schema pero se omiten en creación rápida — se completan en edición posterior
-    if (matricula) {
-      const { error: alumnoError } = await admin.from("alumnos").insert({
-        id: dbUser.id,
-        matricula,
-        carrera_id,
-        semestre_actual: 1,
-        curp: `CBT-${dbUser.id.slice(0, 8).toUpperCase()}`,
-        fecha_nacimiento: "2000-01-01",
-      });
-      if (alumnoError) {
-        console.error("[usuarios POST] alumnos insert warning:", alumnoError.code, alumnoError.message);
+    const matricula       = sanitize(body.matricula ?? "", 20);
+    const curp            = sanitize(body.curp ?? "", 18);
+    const fecha_nacimiento = sanitize(body.fecha_nacimiento ?? "", 10);
+    const carrera_id      = typeof body.carrera_id === "string" && body.carrera_id ? body.carrera_id.trim() : null;
+    const semestre_actual = typeof body.semestre_actual === "number" ? body.semestre_actual : 1;
+    const sexo            = sanitize(body.sexo ?? "", 2);
+
+    if (!matricula || !curp || !fecha_nacimiento) {
+      // Rollback
+      await admin.auth.admin.deleteUser(authData.user.id);
+      await admin.from("usuarios").delete().eq("id", dbUser.id);
+      return NextResponse.json(
+        { error: "matrícula, CURP y fecha de nacimiento son requeridos para alumnos" },
+        { status: 400 }
+      );
+    }
+
+    const { error: alumnoError } = await admin.from("alumnos").insert({
+      id: dbUser.id,
+      matricula,
+      curp,
+      fecha_nacimiento,
+      carrera_id,
+      semestre_actual: semestre_actual >= 1 && semestre_actual <= 6 ? semestre_actual : 1,
+      sexo: ["M", "F", "NB"].includes(sexo) ? sexo : null,
+    });
+
+    if (alumnoError) {
+      // Rollback completo
+      await admin.auth.admin.deleteUser(authData.user.id);
+      await admin.from("usuarios").delete().eq("id", dbUser.id);
+      let msg = "Error al crear registro de alumno";
+      if (alumnoError.code === "23505") {
+        if (alumnoError.message?.includes("matricula")) msg = "Ya existe un alumno con esa matrícula";
+        else if (alumnoError.message?.includes("curp")) msg = "Ya existe un alumno con ese CURP";
       }
+      console.error("[usuarios POST] alumnos insert error:", alumnoError.code, alumnoError.message);
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
   }
 
   // Si es maestro, crear registro en tabla maestros
   if (rol === "maestro") {
+    const rfc          = sanitize(body.rfc ?? "", 13);
     const especialidad = sanitize(body.especialidad ?? "", 100);
+    const tipo_contrato = sanitize(body.tipo_contrato ?? "horas", 20);
     const { error: maestroError } = await admin.from("maestros").insert({
       id: dbUser.id,
+      rfc: rfc || null,
       especialidad: especialidad || null,
+      tipo_contrato: ["base", "horas", "interino"].includes(tipo_contrato) ? tipo_contrato : "horas",
     });
     if (maestroError) {
       console.error("[usuarios POST] maestros insert warning:", maestroError.code, maestroError.message);
@@ -145,8 +171,12 @@ export async function POST(request: NextRequest) {
 
   // Si es padre/tutor, crear registro en tabla padres_tutores
   if (rol === "padres") {
+    const curp_tutor  = sanitize(body.curp_tutor ?? "", 18);
+    const parentesco  = sanitize(body.parentesco ?? "tutor_legal", 20);
     const { error: padresError } = await admin.from("padres_tutores").insert({
       id: dbUser.id,
+      curp: curp_tutor || null,
+      parentesco: ["padre", "madre", "tutor_legal", "otro"].includes(parentesco) ? parentesco : "tutor_legal",
     });
     if (padresError) {
       console.error("[usuarios POST] padres_tutores insert warning:", padresError.code, padresError.message);

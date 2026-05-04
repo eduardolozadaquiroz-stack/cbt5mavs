@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { getBrowserClient } from "@/lib/supabase-browser";
+
+interface Carrera { id: string; nombre: string; clave: string; }
 
 const BASE = "/dashboard/administrador";
 
@@ -61,9 +64,27 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
-  const [form, setForm] = useState({ apellido_paterno: "", apellido_materno: "", nombre: "", email: "", rol: "Alumno" as RolNuevo, pw: "", pw2: "" });
+  const [form, setForm] = useState({
+    apellido_paterno: "", apellido_materno: "", nombre: "", email: "",
+    rol: "Alumno" as RolNuevo, pw: "", pw2: "",
+    // Alumno
+    matricula: "", curp: "", fecha_nacimiento: "", carrera_id: "", semestre_actual: "1", sexo: "",
+    // Maestro
+    rfc: "", especialidad: "", tipo_contrato: "horas",
+    // Padres
+    curp_tutor: "", parentesco: "tutor_legal",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingEmail, setPendingEmail] = useState("");
+  const [carreras, setCarreras] = useState<Carrera[]>([]);
+
+  useEffect(() => {
+    getBrowserClient()
+      .from("carreras")
+      .select("id, nombre, clave")
+      .eq("activa", true)
+      .then(({ data }) => setCarreras(data ?? []));
+  }, []);
 
   const pw = form.pw;
   const checks = checkPw(pw);
@@ -82,6 +103,13 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
       e.email = "Ingresa un correo válido.";
     if (!allPwOk) e.pw = "La contraseña no cumple los requisitos.";
     if (form.pw !== form.pw2) e.pw2 = "Las contraseñas no coinciden.";
+    // Campos por rol
+    if (form.rol === "Alumno") {
+      if (!form.matricula.trim()) e.matricula = "La matrícula es obligatoria.";
+      if (!form.curp.trim()) e.curp = "El CURP es obligatorio.";
+      else if (form.curp.trim().length !== 18) e.curp = "El CURP debe tener exactamente 18 caracteres.";
+      if (!form.fecha_nacimiento) e.fecha_nacimiento = "La fecha de nacimiento es obligatoria.";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -106,6 +134,20 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
           correo:           form.email,
           rol:              form.rol.toLowerCase(),
           password:         form.pw,
+          // Alumno
+          matricula:        form.matricula || undefined,
+          curp:             form.curp || undefined,
+          fecha_nacimiento: form.fecha_nacimiento || undefined,
+          carrera_id:       form.carrera_id || undefined,
+          semestre_actual:  form.semestre_actual ? parseInt(form.semestre_actual) : 1,
+          sexo:             form.sexo || undefined,
+          // Maestro
+          rfc:              form.rfc || undefined,
+          especialidad:     form.especialidad || undefined,
+          tipo_contrato:    form.tipo_contrato || undefined,
+          // Padres
+          curp_tutor:       form.curp_tutor || undefined,
+          parentesco:       form.parentesco || undefined,
         }),
       });
       if (!res.ok) {
@@ -178,6 +220,109 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
                 <option value="Padres">Padre / Tutor</option>
               </select>
             </div>
+
+            {/* ── Campos específicos de Alumno ── */}
+            {form.rol === "Alumno" && (<>
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">
+                  Matrícula <span className="text-red-500">*</span>
+                </label>
+                <input value={form.matricula} onChange={(e) => set("matricula", e.target.value)}
+                  placeholder="Ej. 2024001" maxLength={20}
+                  className={`${inputBase} ${errors.matricula ? inputErr : inputOk}`} />
+                {errors.matricula && <p className="text-xs text-red-600 mt-1">{errors.matricula}</p>}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">
+                  CURP <span className="text-red-500">*</span>
+                </label>
+                <input value={form.curp} onChange={(e) => set("curp", e.target.value.toUpperCase())}
+                  placeholder="Ej. LOQA000101HMSLNN08" maxLength={18}
+                  className={`${inputBase} font-mono text-xs ${errors.curp ? inputErr : inputOk}`} />
+                {errors.curp && <p className="text-xs text-red-600 mt-1">{errors.curp}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">
+                    Fecha de Nacimiento <span className="text-red-500">*</span>
+                  </label>
+                  <input type="date" value={form.fecha_nacimiento} onChange={(e) => set("fecha_nacimiento", e.target.value)}
+                    className={`${inputBase} ${errors.fecha_nacimiento ? inputErr : inputOk}`} />
+                  {errors.fecha_nacimiento && <p className="text-xs text-red-600 mt-1">{errors.fecha_nacimiento}</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Sexo <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                  <select value={form.sexo} onChange={(e) => set("sexo", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                    <option value="">Sin especificar</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                    <option value="NB">No binario</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Carrera <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                  <select value={form.carrera_id} onChange={(e) => set("carrera_id", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                    <option value="">Sin asignar</option>
+                    {carreras.map((c) => <option key={c.id} value={c.id}>{c.nombre} ({c.clave})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Semestre</label>
+                  <select value={form.semestre_actual} onChange={(e) => set("semestre_actual", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                    {[1,2,3,4,5,6].map((s) => <option key={s} value={s}>{s}°</option>)}
+                  </select>
+                </div>
+              </div>
+            </>)}
+
+            {/* ── Campos específicos de Maestro ── */}
+            {form.rol === "Maestro" && (<>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">RFC <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                  <input value={form.rfc} onChange={(e) => set("rfc", e.target.value.toUpperCase())}
+                    placeholder="Ej. LOQA820101AB1" maxLength={13}
+                    className={`${inputBase} font-mono text-xs ${inputOk}`} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Tipo de Contrato</label>
+                  <select value={form.tipo_contrato} onChange={(e) => set("tipo_contrato", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                    <option value="horas">Por Horas</option>
+                    <option value="base">Base</option>
+                    <option value="interino">Interino</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Especialidad <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                <input value={form.especialidad} onChange={(e) => set("especialidad", e.target.value)}
+                  placeholder="Ej. Informática, Matemáticas" maxLength={100}
+                  className={`${inputBase} ${inputOk}`} />
+              </div>
+            </>)}
+
+            {/* ── Campos específicos de Padre/Tutor ── */}
+            {form.rol === "Padres" && (<>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">CURP <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                  <input value={form.curp_tutor} onChange={(e) => set("curp_tutor", e.target.value.toUpperCase())}
+                    placeholder="18 caracteres" maxLength={18}
+                    className={`${inputBase} font-mono text-xs ${inputOk}`} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Parentesco</label>
+                  <select value={form.parentesco} onChange={(e) => set("parentesco", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                    <option value="tutor_legal">Tutor Legal</option>
+                    <option value="padre">Padre</option>
+                    <option value="madre">Madre</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+            </>)}
 
             {/* Correo */}
             <div>
