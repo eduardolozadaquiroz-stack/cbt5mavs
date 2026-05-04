@@ -228,6 +228,7 @@ export default function SeleccionarAlumnoPage() {
     setSubmitting(true);
     // Solo guardamos datos no sensibles para la UI (el acceso real siempre se valida en el servidor)
     sessionStorage.setItem("selectedAlumnoId", alumno.alumno_id);
+    sessionStorage.setItem("selectedAlumnoMatricula", alumno.matricula ?? "");
     sessionStorage.setItem("selectedAlumnoNombre", alumno.nombre);
     sessionStorage.setItem("selectedAlumnoSemestre", String(alumno.semestre));
     sessionStorage.setItem("selectedAlumnoGrupo", alumno.grupo);

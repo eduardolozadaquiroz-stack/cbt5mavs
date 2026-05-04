@@ -7,7 +7,8 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface StudentData {
-  studentId: string;
+  studentId: string;      // UUID interno (para llamadas a API)
+  matricula: string;      // matrícula real ej. "201724408"
   studentName: string;
   grado: string;
   grupo: string;
@@ -47,6 +48,7 @@ export default function PadresDashboard() {
 
   useEffect(() => {
     const alumnoId = sessionStorage.getItem("selectedAlumnoId");
+    const alumnoMatricula = sessionStorage.getItem("selectedAlumnoMatricula") ?? "";
     const alumnoNombre = sessionStorage.getItem("selectedAlumnoNombre");
     const semestre = sessionStorage.getItem("selectedAlumnoSemestre");
     const grupo = sessionStorage.getItem("selectedAlumnoGrupo");
@@ -74,6 +76,7 @@ export default function PadresDashboard() {
         }
         setStudent({
           studentId: alumnoId,
+          matricula: alumnoMatricula,
           studentName: alumno.nombre,
           grado: `${alumno.semestre}°`,
           grupo: alumno.grupo,
@@ -135,12 +138,13 @@ export default function PadresDashboard() {
             <div>
               <h1 className="font-display-lg text-display-lg text-on-background mb-1">Seguimiento de {student.studentName}</h1>
               <p className="font-body-base text-body-base text-on-surface-variant">
-                Grado {student.grado} · Grupo {student.grupo} · Matrícula {student.studentId}
+                Grado {student.grado} · Grupo {student.grupo} · Matrícula {student.matricula || student.studentId}
               </p>
             </div>
             <button
               onClick={() => {
                 sessionStorage.removeItem("selectedAlumnoId");
+                sessionStorage.removeItem("selectedAlumnoMatricula");
                 sessionStorage.removeItem("selectedAlumnoNombre");
                 sessionStorage.removeItem("selectedAlumnoSemestre");
                 sessionStorage.removeItem("selectedAlumnoGrupo");
@@ -166,7 +170,7 @@ export default function PadresDashboard() {
                   <p><strong>Nombre:</strong> {student.studentName}</p>
                   <p><strong>Grado:</strong> {student.grado}</p>
                   <p><strong>Grupo:</strong> {student.grupo}</p>
-                  <p><strong>Matrícula:</strong> {student.studentId}</p>
+                  <p><strong>Matrícula:</strong> {student.matricula || student.studentId}</p>
                 </div>
               </div>
 
