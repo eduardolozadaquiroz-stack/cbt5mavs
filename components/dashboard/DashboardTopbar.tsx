@@ -1,13 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-
-interface Notif {
-  id: number;
-  tipo: "Urgente" | "Académico" | "Administrativo" | "Institucional" | "Sistema";
-  titulo: string;
-  tiempo: string;
-  leido: boolean;
-}
+import { useRealtimeNotificaciones } from "@/hooks/useRealtimeNotificaciones";
 
 const TIPO_COLOR: Record<string, string> = {
   Urgente:        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
@@ -16,22 +9,6 @@ const TIPO_COLOR: Record<string, string> = {
   Institucional:  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
   Sistema:        "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
 };
-
-const INITIAL_NOTIFS: Notif[] = [
-  { id: 1, tipo: "Urgente",        titulo: "Cierre de captura — 3 de mayo, 14:00 hrs",       tiempo: "Hace 2 min",  leido: false },
-  { id: 2, tipo: "Académico",      titulo: "Calificaciones del Parcial 2 publicadas",         tiempo: "Hace 1 hora", leido: false },
-  { id: 3, tipo: "Institucional",  titulo: "Suspensión 15 de mayo — Día del Maestro",         tiempo: "Ayer",        leido: true  },
-  { id: 4, tipo: "Administrativo", titulo: "Actualiza tus datos en SIGEEMS antes del 30 abr", tiempo: "Hace 2 días", leido: true  },
-];
-
-const SIM_NOTIFS: Pick<Notif, "tipo" | "titulo">[] = [
-  { tipo: "Sistema",        titulo: "Mantenimiento programado — 23:00 hrs" },
-  { tipo: "Académico",      titulo: "Nuevo aviso del coordinador académico" },
-  { tipo: "Administrativo", titulo: "Recordatorio: captura cierra en 3 días" },
-  { tipo: "Institucional",  titulo: "Evento cultural — 10 de mayo, auditorio" },
-];
-
-let _idCounter = 100;
 
 interface DashboardTopbarProps {
   userImageSrc?: string;
@@ -122,11 +99,10 @@ export default function DashboardTopbar({
     return page === "dashboard" ? linkBase : `${linkBase}/${page}`;
   };
 
-  // Notificaciones
-  const [notifOpen, setNotifOpen]     = useState(false);
-  const [notifs, setNotifs]           = useState<Notif[]>(INITIAL_NOTIFS);
-  const notifRef                      = useRef<HTMLDivElement>(null);
-  const simIdx                        = useRef(0);
+  // Notificaciones (tiempo real)
+  const { notifs, unread, markRead, markAllRead } = useRealtimeNotificaciones();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef                  = useRef<HTMLDivElement>(null);
 
   // Dark mode
   const [isDark, setIsDark] = useState(false);
@@ -153,18 +129,7 @@ export default function DashboardTopbar({
   const [userOpen, setUserOpen]   = useState(false);
   const userRef                   = useRef<HTMLDivElement>(null);
 
-  // Simulación: nueva notificación cada 15 s
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const mock = SIM_NOTIFS[simIdx.current % SIM_NOTIFS.length];
-      simIdx.current++;
-      setNotifs((prev) => [
-        { id: _idCounter++, ...mock, tiempo: "Ahora mismo", leido: false },
-        ...prev,
-      ]);
-    }, 15000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   // Cerrar panels al clic fuera
   useEffect(() => {
@@ -177,9 +142,7 @@ export default function DashboardTopbar({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const unread      = notifs.filter((n) => !n.leido).length;
-  const markRead    = (id: number) => setNotifs((p) => p.map((n) => (n.id === id ? { ...n, leido: true } : n)));
-  const markAllRead = ()           => setNotifs((p) => p.map((n) => ({ ...n, leido: true })));
+
 
   // Iniciales del usuario para avatar fallback
   const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
