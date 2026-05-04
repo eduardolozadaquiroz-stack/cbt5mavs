@@ -1,46 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import Link from "next/link";
 
 const BASE = "/dashboard/administrador";
 
-interface Periodo {
-  id: number;
+interface Ciclo {
+  id: string;
   nombre: string;
-  fechaInicio: string;
-  fechaFin: string;
+  periodo: string;
+  fecha_inicio: string;
+  fecha_fin: string;
   activo: boolean;
 }
 
-const periodosIniciales: Periodo[] = [
-  { id: 1, nombre: "Ciclo 2023-2024 — Primer Parcial",   fechaInicio: "2023-08-21", fechaFin: "2023-10-06", activo: false },
-  { id: 2, nombre: "Ciclo 2023-2024 — Segundo Parcial",  fechaInicio: "2023-10-09", fechaFin: "2023-11-24", activo: false },
-  { id: 3, nombre: "Ciclo 2023-2024 — Tercer Parcial",   fechaInicio: "2023-11-27", fechaFin: "2024-01-26", activo: false },
-  { id: 4, nombre: "Ciclo 2024-2025 — Primer Semestre",  fechaInicio: "2024-08-19", fechaFin: "2025-01-24", activo: false },
-  { id: 5, nombre: "Ciclo 2025-2026 — Primer Parcial",   fechaInicio: "2025-08-18", fechaFin: "2025-10-03", activo: false },
-  { id: 6, nombre: "Ciclo 2025-2026 — Segundo Parcial",  fechaInicio: "2025-10-06", fechaFin: "2025-12-05", activo: false },
-  { id: 7, nombre: "Ciclo 2025-2026 — Tercer Parcial",   fechaInicio: "2026-01-12", fechaFin: "2026-06-30", activo: true  },
+const PERIODOS_SUGERIDOS = [
+  "Primer Parcial",
+  "Segundo Parcial",
+  "Tercer Parcial",
 ];
 
 export default function PeriodosPage() {
-  const [periodos, setPeriodos] = useState<Periodo[]>(periodosIniciales);
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ nombre: "", fechaInicio: "", fechaFin: "" });
+  const [ciclos, setCiclos]     = useState<Ciclo[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState<string | null>(null); // id del ciclo que se está cambiando
+  const [modal, setModal]       = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({
+    nombre: "",
+    periodo: "",
+    fecha_inicio: "",
+    fecha_fin: "",
+  });
 
-  function toggleActivo(id: number) {
-    setPeriodos((p) =>
-      p.map((x) => x.id === id ? { ...x, activo: !x.activo } : x)
-    );
+  const fetchCiclos = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/ciclos");
+    const data = await res.json();
+    setCiclos(data.ciclos ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchCiclos(); }, [fetchCiclos]);
+
+  async function toggleActivo(ciclo: Ciclo) {
+    setSaving(ciclo.id);
+    const res = await fetch("/api/admin/ciclos", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: ciclo.id, activo: !ciclo.activo }),
+    });
+    if (res.ok) {
+      await fetchCiclos();
+    }
+    setSaving(null);
   }
 
-  function addPeriodo() {
-    if (!form.nombre || !form.fechaInicio || !form.fechaFin) return;
-    setPeriodos((p) => [...p, { id: Date.now(), ...form, activo: false }]);
-    setForm({ nombre: "", fechaInicio: "", fechaFin: "" });
+  async function handleCrear() {
+    setFormError("");
+    if (!form.nombre.trim() || !form.periodo.trim() || !form.fecha_inicio || !form.fecha_fin) {
+      setFormError("Todos los campos son obligatorios.");
+      return;
+    }
+    if (form.fecha_fin <= form.fecha_inicio) {
+      setFormError("La fecha fin debe ser posterior a la fecha de inicio.");
+      return;
+    }
+    setSaving("new");
+    const res = await fetch("/api/admin/ciclos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setFormError(data.error ?? "Error al crear el ciclo.");
+      setSaving(null);
+      return;
+    }
     setModal(false);
+    setForm({ nombre: "", periodo: "", fecha_inicio: "", fecha_fin: "" });
+    await fetchCiclos();
+    setSaving(null);
+  }
+
+  function handleCerrarModal() {
+    setModal(false);
+    setFormError("");
+    setForm({ nombre: "", periodo: "", fecha_inicio: "", fecha_fin: "" });
   }
 
   const inputBase = "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300";
@@ -77,40 +126,57 @@ export default function PeriodosPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="px-4 py-2.5 text-left border-b border-slate-200 dark:border-slate-700">Nombre</th>
-                  <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Inicio</th>
-                  <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Fin</th>
-                  <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Estado</th>
-                  <th className="px-4 py-2.5 text-right border-b border-slate-200 dark:border-slate-700">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {periodos.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100">{p.nombre}</td>
-                    <td className="px-4 py-3 text-center text-xs text-slate-500">{p.fechaInicio}</td>
-                    <td className="px-4 py-3 text-center text-xs text-slate-500">{p.fechaFin}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${p.activo ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"}`}>
-                        {p.activo ? "Activo" : "Cerrado"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => toggleActivo(p.id)}
-                        className="text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        {p.activo ? "Cerrar" : "Activar"}
-                      </button>
-                    </td>
+            {loading ? (
+              <div className="py-12 text-center text-sm text-slate-500">Cargando periodos…</div>
+            ) : ciclos.length === 0 ? (
+              <div className="py-12 text-center text-sm text-slate-500">No hay periodos registrados.</div>
+            ) : (
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-2.5 text-left border-b border-slate-200 dark:border-slate-700">Nombre</th>
+                    <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Clave</th>
+                    <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Inicio</th>
+                    <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Fin</th>
+                    <th className="px-4 py-2.5 text-center border-b border-slate-200 dark:border-slate-700">Estado</th>
+                    <th className="px-4 py-2.5 text-right border-b border-slate-200 dark:border-slate-700">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ciclos.map((c) => (
+                    <tr key={c.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100">{c.nombre}</td>
+                      <td className="px-4 py-3 text-center text-xs font-mono text-slate-500">{c.periodo}</td>
+                      <td className="px-4 py-3 text-center text-xs text-slate-500">{c.fecha_inicio}</td>
+                      <td className="px-4 py-3 text-center text-xs text-slate-500">{c.fecha_fin}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${c.activo ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"}`}>
+                          {c.activo ? "Activo" : "Cerrado"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => toggleActivo(c)}
+                          disabled={saving === c.id}
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${
+                            c.activo
+                              ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                              : "border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                          } disabled:opacity-50`}
+                        >
+                          {saving === c.id ? "…" : c.activo ? "Cerrar" : "Activar"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
+
+          <p className="text-xs text-slate-400 mt-3">
+            Solo puede haber <strong>un periodo activo</strong> a la vez. Al activar uno, los demás se cierran automáticamente.
+          </p>
         </main>
       </div>
 
@@ -121,22 +187,55 @@ export default function PeriodosPage() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className={labelBase}>Nombre del periodo</label>
-                <input value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Ciclo 2026-2027 — Primer Parcial" className={inputBase} />
+                <input
+                  value={form.nombre}
+                  onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                  placeholder="Ej. Ciclo 2026-2027 — Primer Parcial"
+                  className={inputBase}
+                />
+              </div>
+              <div>
+                <label className={labelBase}>Parcial</label>
+                <div className="flex gap-2">
+                  {PERIODOS_SUGERIDOS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, nombre: f.nombre.split("—")[0].trim() ? `${f.nombre.split("—")[0].trim()} — ${s}` : s }))}
+                      className="text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelBase}>Clave única del periodo <span className="font-normal normal-case">(ej: 2026-1, 2026-2)</span></label>
+                <input
+                  value={form.periodo}
+                  onChange={(e) => setForm((f) => ({ ...f, periodo: e.target.value }))}
+                  placeholder="Ej. 2026-1"
+                  maxLength={20}
+                  className={inputBase}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelBase}>Fecha inicio</label>
-                  <input type="date" value={form.fechaInicio} onChange={(e) => setForm((f) => ({ ...f, fechaInicio: e.target.value }))} className={inputBase} />
+                  <input type="date" value={form.fecha_inicio} onChange={(e) => setForm((f) => ({ ...f, fecha_inicio: e.target.value }))} className={inputBase} />
                 </div>
                 <div>
                   <label className={labelBase}>Fecha fin</label>
-                  <input type="date" value={form.fechaFin} onChange={(e) => setForm((f) => ({ ...f, fechaFin: e.target.value }))} className={inputBase} />
+                  <input type="date" value={form.fecha_fin} onChange={(e) => setForm((f) => ({ ...f, fecha_fin: e.target.value }))} className={inputBase} />
                 </div>
               </div>
+              {formError && <p className="text-xs text-red-600">{formError}</p>}
             </div>
             <div className="mt-4 flex gap-2">
-              <button onClick={() => setModal(false)} className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
-              <button onClick={addPeriodo} className="flex-1 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition-colors">Crear periodo</button>
+              <button onClick={handleCerrarModal} className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
+              <button onClick={handleCrear} disabled={saving === "new"} className="flex-1 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition-colors disabled:opacity-60">
+                {saving === "new" ? "Guardando…" : "Crear periodo"}
+              </button>
             </div>
           </div>
         </div>
