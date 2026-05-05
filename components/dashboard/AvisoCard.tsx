@@ -307,6 +307,21 @@ export default function AvisoCard({ aviso }: { aviso: Aviso }) {
             </div>
           )}
 
+          {/* ── Leer más (página de detalle) ── */}
+          <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+            <a
+              href={`/avisos/${aviso.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+            >
+              Leer más
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+              </svg>
+            </a>
+          </div>
+
         </div>
       </article>
 
