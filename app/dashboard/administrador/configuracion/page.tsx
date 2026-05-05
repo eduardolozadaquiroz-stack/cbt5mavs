@@ -104,7 +104,7 @@ export default function ConfiguracionPage() {
                   { key: "registroPublico",  label: "Admisión abierta al público",                desc: "Los aspirantes pueden consultar el proceso" },
                   { key: "mantenimiento",    label: "Modo mantenimiento",                         desc: "Bloquea acceso a alumnos, maestros y padres" },
                 ].map(({ key, label, desc }) => {
-                  const isOn = !!(form as Record<string, string | boolean>)[key];
+                  const isOn = !!(form as unknown as Record<string, string | boolean>)[key];
                   return (
                     <label key={key} className="flex items-center justify-between gap-4 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <div>
