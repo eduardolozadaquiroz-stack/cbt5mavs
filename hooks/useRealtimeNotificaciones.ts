@@ -26,16 +26,22 @@ const TIPO_MAP: Record<string, TipoNotif> = {
   sistema:        "Sistema",
 };
 
-function relativeTime(dateStr: string): string {
+function relativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Ahora mismo";
   const diff = Date.now() - new Date(dateStr).getTime();
+  if (diff < 0 || isNaN(diff)) return "Ahora mismo";
   const mins = Math.floor(diff / 60000);
   if (mins < 1)   return "Ahora mismo";
   if (mins < 60)  return `Hace ${mins} min`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `Hace ${hours} hora${hours > 1 ? "s" : ""}`;
   const days = Math.floor(hours / 24);
+  if (days === 0) return "Hoy";
   if (days === 1) return "Ayer";
-  return `Hace ${days} días`;
+  if (days < 7)  return `Hace ${days} días`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `Hace ${weeks} semana${weeks > 1 ? "s" : ""}`;
+  return new Date(dateStr).toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 }
 
 const STORAGE_KEY = "cbt-notifs-leidas";
@@ -68,7 +74,7 @@ export function useRealtimeNotificaciones() {
   }, []);
 
   const mapAviso = useCallback(
-    (a: { id: string; titulo: string; tipo: string; fecha_publicacion: string }, ids: Set<string>): Notificacion => ({
+    (a: { id: string; titulo: string; tipo: string; fecha_publicacion: string | null }, ids: Set<string>): Notificacion => ({
       id:     a.id,
       tipo:   TIPO_MAP[a.tipo] ?? "Sistema",
       titulo: a.titulo,
@@ -82,7 +88,7 @@ export function useRealtimeNotificaciones() {
     try {
       const res = await fetch("/api/avisos?limit=20", { credentials: "include" });
       if (!res.ok) return;
-      const json = await res.json() as { avisos?: Array<{ id: string; titulo: string; tipo: string; fecha_publicacion: string }> };
+      const json = await res.json() as { avisos?: Array<{ id: string; titulo: string; tipo: string; fecha_publicacion: string | null }> };
       const ids = getReadIds();
       setNotifs((json.avisos ?? []).map((a) => mapAviso(a, ids)));
     } catch {

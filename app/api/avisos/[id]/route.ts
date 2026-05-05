@@ -55,7 +55,7 @@ export async function PATCH(
   // Verificar que el aviso existe y el usuario tiene permiso (admin o autor)
   const { data: existing } = await admin
     .from("avisos")
-    .select("autor_id")
+    .select("autor_id, fecha_publicacion")
     .eq("id", id)
     .single();
 
@@ -72,7 +72,13 @@ export async function PATCH(
     const url = sanitize(body.imagen_url, 500);
     updates.fotos = url ? [url] : [];
   }
-  if (typeof body.activo === "boolean") updates.estado = body.activo ? "publicado" : "borrador";
+  if (typeof body.activo === "boolean") {
+    updates.estado = body.activo ? "publicado" : "borrador";
+    // Si se está publicando y aún no tiene fecha, asignarla ahora
+    if (body.activo && !existing.fecha_publicacion) {
+      updates.fecha_publicacion = new Date().toISOString();
+    }
+  }
   if (typeof body.destinatario === "string") {
     const VALID_DEST = ["Todos", "Alumnos", "Maestros", "Padres"];
     if (VALID_DEST.includes(body.destinatario)) updates.destinatario = body.destinatario;

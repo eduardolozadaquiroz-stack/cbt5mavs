@@ -279,9 +279,11 @@ export default function DashboardTopbar({
                 {notifs.length === 0 ? (
                   <p className="text-sm text-slate-500 text-center py-8">Sin notificaciones</p>
                 ) : notifs.map((n) => (
-                  <div
+                  <a
                     key={n.id}
+                    href={linkBase ? `${linkBase}/avisos` : "#"}
                     className={`px-4 py-3 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${!n.leido ? "bg-blue-50/70 dark:bg-slate-800/60" : ""}`}
+                    onClick={() => { markRead(n.id); setNotifOpen(false); }}
                   >
                     <span className={`mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 whitespace-nowrap ${TIPO_COLOR[n.tipo]}`}>{n.tipo}</span>
                     <div className="flex-1 min-w-0">
@@ -289,9 +291,9 @@ export default function DashboardTopbar({
                       <p className="text-[10px] text-slate-500 mt-0.5">{n.tiempo}</p>
                     </div>
                     {!n.leido && (
-                      <button onClick={() => markRead(n.id)} title="Marcar como leída" className="flex-shrink-0 mt-1.5 w-2 h-2 rounded-full bg-blue-600 hover:bg-blue-400 transition-colors" />
+                      <span className="flex-shrink-0 mt-1.5 w-2 h-2 rounded-full bg-blue-600" />
                     )}
-                  </div>
+                  </a>
                 ))}
               </div>
               {linkBase && (

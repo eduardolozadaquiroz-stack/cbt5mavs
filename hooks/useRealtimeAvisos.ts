@@ -6,7 +6,7 @@ import { getBrowserClient } from "@/lib/supabase-browser";
 export interface Aviso {
   id: string;
   titulo: string;
-  contenido: string;
+  cuerpo: string;
   tipo: string;
   imagen_url: string | null;
   fecha_publicacion: string | null;

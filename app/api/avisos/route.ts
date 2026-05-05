@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
       fotos: imagen_url ? [imagen_url] : [],
       autor_id: user.db_id,
       estado: activoRaw ? "publicado" : "borrador",
+      fecha_publicacion: activoRaw ? new Date().toISOString() : null,
     })
     .select("id")
     .single();

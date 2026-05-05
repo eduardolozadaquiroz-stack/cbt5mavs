@@ -92,7 +92,7 @@ export default function AvisosInternoPage() {
 
                   <h2 className="font-title-sm text-title-sm text-on-surface">{aviso.titulo}</h2>
                   <p className="font-body-base text-body-base text-on-surface-variant leading-relaxed">
-                    {aviso.contenido}
+                    {aviso.cuerpo}
                   </p>
 
                   {aviso.imagen_url && (
