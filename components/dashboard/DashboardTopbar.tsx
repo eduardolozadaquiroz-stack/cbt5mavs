@@ -111,8 +111,12 @@ export default function DashboardTopbar({
     return page === "dashboard" ? linkBase : `${linkBase}/${page}`;
   };
 
-  // Notificaciones (tiempo real)
-  const { notifs, unread, markRead, markAllRead } = useRealtimeNotificaciones();
+  // Notificaciones (tiempo real) — pasar rol para filtrar por destinatario
+  const notifPara =
+    linkBase?.includes("/padres")        ? "padres"  :
+    linkBase?.includes("/alumno")        ? "alumnos" :
+    linkBase?.includes("/maestro")       ? "maestros" : undefined;
+  const { notifs, unread, markRead, markAllRead } = useRealtimeNotificaciones(notifPara);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef                  = useRef<HTMLDivElement>(null);
 

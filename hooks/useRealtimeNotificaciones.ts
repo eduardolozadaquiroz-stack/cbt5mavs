@@ -63,7 +63,7 @@ function saveReadIds(ids: Set<string>) {
   }
 }
 
-export function useRealtimeNotificaciones() {
+export function useRealtimeNotificaciones(para?: string) {
   const [notifs, setNotifs]   = useState<Notificacion[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const initialized           = useRef(false);
@@ -86,7 +86,8 @@ export function useRealtimeNotificaciones() {
 
   const fetchNotifs = useCallback(async () => {
     try {
-      const res = await fetch("/api/avisos?limit=20", { credentials: "include" });
+      const url = para ? `/api/avisos?limit=20&para=${para}` : "/api/avisos?limit=20";
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) return;
       const json = await res.json() as { avisos?: Array<{ id: string; titulo: string; tipo: string; fecha_publicacion: string | null }> };
       const ids = getReadIds();
@@ -109,9 +110,13 @@ export function useRealtimeNotificaciones() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "avisos" },
         (payload) => {
-          const a = payload.new as { id: string; titulo: string; tipo: string; estado: string; fecha_publicacion: string };
-          // Solo mostrar avisos publicados
+          const a = payload.new as { id: string; titulo: string; tipo: string; estado: string; fecha_publicacion: string; destinatario: string };
+          // Solo mostrar avisos publicados y del destinatario correcto
           if (a.estado !== "publicado") return;
+          const DEST_MAP: Record<string, string> = { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" };
+          const destLabel = para ? DEST_MAP[para] : null;
+          if (destLabel && a.destinatario !== "Todos" && a.destinatario !== destLabel) return;
+          if (!para && a.destinatario === "Padres") return;
           const ids = getReadIds();
           setNotifs((prev) => [mapAviso({ ...a, fecha_publicacion: new Date().toISOString() }, ids), ...prev].slice(0, 30));
         }
@@ -120,9 +125,14 @@ export function useRealtimeNotificaciones() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "avisos" },
         (payload) => {
-          const a = payload.new as { id: string; titulo: string; tipo: string; estado: string; fecha_publicacion: string };
+          const a = payload.new as { id: string; titulo: string; tipo: string; estado: string; fecha_publicacion: string; destinatario: string };
+          const DEST_MAP: Record<string, string> = { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" };
+          const destLabel = para ? DEST_MAP[para] : null;
+          const destOk = !destLabel
+            ? a.destinatario !== "Padres"
+            : a.destinatario === "Todos" || a.destinatario === destLabel;
           setNotifs((prev) => {
-            if (a.estado !== "publicado") {
+            if (a.estado !== "publicado" || !destOk) {
               return prev.filter((n) => n.id !== a.id);
             }
             const exists = prev.some((n) => n.id === a.id);
