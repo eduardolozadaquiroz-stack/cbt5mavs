@@ -9,10 +9,18 @@ export interface Aviso {
   cuerpo: string;
   tipo: string;
   fotos: string[];
+  videos: string[];
+  pdfs: string[];
   fecha_publicacion: string | null;
   activo: boolean;
   autor_id: string | null;
   destinatario: string;
+  es_evento: boolean;
+  evento_inicio: string | null;
+  evento_fin: string | null;
+  evento_lugar: string | null;
+  evento_vestimenta: string | null;
+  evento_enlace: string | null;
 }
 
 // Tipo del row crudo que devuelve Supabase Realtime (columnas DB)
@@ -23,9 +31,17 @@ interface DbRow {
   tipo: string;
   estado: string;
   fotos: string[];
+  videos: string[];
+  pdfs: string[];
   fecha_publicacion: string | null;
   destinatario: string;
   autor_id: string | null;
+  es_evento: boolean;
+  evento_inicio: string | null;
+  evento_fin: string | null;
+  evento_lugar: string | null;
+  evento_vestimenta: string | null;
+  evento_enlace: string | null;
 }
 
 function mapDbRow(row: DbRow): Aviso {
@@ -35,10 +51,18 @@ function mapDbRow(row: DbRow): Aviso {
     cuerpo: row.contenido,
     tipo: row.tipo,
     fotos: row.fotos ?? [],
+    videos: row.videos ?? [],
+    pdfs: row.pdfs ?? [],
     activo: row.estado === "publicado",
     fecha_publicacion: row.fecha_publicacion,
     destinatario: row.destinatario ?? "Todos",
     autor_id: row.autor_id,
+    es_evento: row.es_evento ?? false,
+    evento_inicio: row.evento_inicio ?? null,
+    evento_fin: row.evento_fin ?? null,
+    evento_lugar: row.evento_lugar ?? null,
+    evento_vestimenta: row.evento_vestimenta ?? null,
+    evento_enlace: row.evento_enlace ?? null,
   };
 }
 

@@ -13,7 +13,15 @@ interface Aviso {
   tipo: string;
   activo: boolean;
   fotos: string[];
+  videos: string[];
+  pdfs: string[];
   fecha_publicacion: string | null;
+  es_evento: boolean;
+  evento_inicio: string | null;
+  evento_fin: string | null;
+  evento_lugar: string | null;
+  evento_vestimenta: string | null;
+  evento_enlace: string | null;
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -171,6 +179,66 @@ export default function PadresAvisosPage() {
                     </div>
                     <h3 className="font-title-sm text-title-sm text-on-surface mb-1">{a.titulo}</h3>
                     <p className="font-body-base text-body-base text-on-surface-variant">{a.cuerpo}</p>
+
+                    {/* Banner de evento */}
+                    {a.es_evento && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mt-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl">🗓️</span>
+                          <h4 className="font-bold text-blue-900 dark:text-blue-200 text-sm">Información del Evento</h4>
+                        </div>
+                        {a.evento_inicio && (
+                          <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                            📅 <strong>Inicio:</strong>{" "}
+                            {new Date(a.evento_inicio).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })} ·{" "}
+                            {new Date(a.evento_inicio).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        )}
+                        {a.evento_fin && (
+                          <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                            📅 <strong>Fin:</strong>{" "}
+                            {new Date(a.evento_fin).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })} ·{" "}
+                            {new Date(a.evento_fin).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        )}
+                        {a.evento_lugar && <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">📍 {a.evento_lugar}</p>}
+                        {a.evento_vestimenta && <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">👔 <strong>Vestimenta:</strong> {a.evento_vestimenta}</p>}
+                        {a.evento_enlace && (
+                          <a href={a.evento_enlace} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1 text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                            🔗 Ver más información
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Videos */}
+                    {(a.videos?.length ?? 0) > 0 && (
+                      <div className="flex flex-col gap-3 mt-3">
+                        {a.videos.map((url, i) => (
+                          <video key={i} controls className="w-full rounded-xl bg-black" src={url}>
+                            Tu navegador no soporta video HTML5.
+                          </video>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* PDFs */}
+                    {(a.pdfs?.length ?? 0) > 0 && (
+                      <div className="flex flex-col gap-2 mt-3">
+                        {a.pdfs.map((url, i) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-600 flex-shrink-0">
+                              <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                            </svg>
+                            <span className="text-sm font-medium text-red-700 dark:text-red-300 truncate">
+                              {(() => { try { return decodeURIComponent(url.split("/").pop() ?? "documento.pdf"); } catch { return "documento.pdf"; } })()}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

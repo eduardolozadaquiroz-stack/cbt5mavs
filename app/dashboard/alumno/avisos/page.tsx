@@ -111,6 +111,69 @@ export default function AvisosInternoPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Banner de evento */}
+                  {aviso.es_evento && (
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">🗓️</span>
+                        <h3 className="font-bold text-blue-900 dark:text-blue-200 text-sm">Información del Evento</h3>
+                      </div>
+                      {aviso.evento_inicio && (
+                        <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                          📅 <strong>Inicio:</strong>{" "}
+                          {new Date(aviso.evento_inicio).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })} ·{" "}
+                          {new Date(aviso.evento_inicio).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                      {aviso.evento_fin && (
+                        <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                          📅 <strong>Fin:</strong>{" "}
+                          {new Date(aviso.evento_fin).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })} ·{" "}
+                          {new Date(aviso.evento_fin).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                      {aviso.evento_lugar && <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">📍 {aviso.evento_lugar}</p>}
+                      {aviso.evento_vestimenta && <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">👔 <strong>Vestimenta:</strong> {aviso.evento_vestimenta}</p>}
+                      {aviso.evento_enlace && (
+                        <a href={aviso.evento_enlace} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 mt-1 text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                          🔗 Ver más información
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Videos */}
+                  {(aviso.videos?.length ?? 0) > 0 && (
+                    <div className="flex flex-col gap-3">
+                      {aviso.videos.map((url, i) => (
+                        <video key={i} controls className="w-full rounded-xl bg-black" src={url}>
+                          Tu navegador no soporta video HTML5.
+                        </video>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* PDFs */}
+                  {(aviso.pdfs?.length ?? 0) > 0 && (
+                    <div className="flex flex-col gap-2">
+                      {aviso.pdfs.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-600 flex-shrink-0">
+                            <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                          </svg>
+                          <span className="text-sm font-medium text-red-700 dark:text-red-300 truncate">
+                            {(() => { try { return decodeURIComponent(url.split("/").pop() ?? "documento.pdf"); } catch { return "documento.pdf"; } })()}
+                          </span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-red-500 ml-auto flex-shrink-0">
+                            <path d="M5 20h14v-2H5v2zm7-18L5.33 9h4.84v4h3.66V9h4.84L12 2z"/>
+                          </svg>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </article>
             ))}

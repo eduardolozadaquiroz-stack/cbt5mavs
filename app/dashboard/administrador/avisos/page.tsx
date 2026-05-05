@@ -67,7 +67,15 @@ interface Aviso {
   fecha_publicacion: string | null;
   activo: boolean;
   fotos: string[];
+  videos: string[];
+  pdfs: string[];
   destinatario: string;
+  es_evento: boolean;
+  evento_inicio: string | null;
+  evento_fin: string | null;
+  evento_lugar: string | null;
+  evento_vestimenta: string | null;
+  evento_enlace: string | null;
 }
 
 const TIPO_COLORS: Record<Tipo, string> = {
@@ -86,9 +94,12 @@ async function uploadFoto(file: File): Promise<string> {
   fd.append("file", file);
   const r = await fetch("/api/storage/upload", { method: "POST", body: fd });
   const d = await r.json();
-  if (!d.ok) throw new Error(d.error ?? "Error al subir la imagen");
+  if (!d.ok) throw new Error(d.error ?? "Error al subir el archivo");
   return d.url as string;
 }
+// Reutilizamos la misma función para videos y PDFs (mismo bucket, misma API)
+const uploadVideo = uploadFoto;
+const uploadPdf   = uploadFoto;
 
 // ── Modal crear / editar aviso ────────────────────────────────────────────────
 function ModalAviso({
@@ -102,21 +113,31 @@ function ModalAviso({
 }) {
   const isEdit = !!aviso?.id;
   const [form, setForm] = useState({
-    titulo:       aviso?.titulo       ?? "",
-    cuerpo:       aviso?.cuerpo       ?? "",
-    tipo:         aviso?.tipo         ?? ("institucional" as Tipo),
-    firmado:      aviso?.firmado      ?? "",
-    activo:       aviso?.activo       ?? true,
-    fotos:        aviso?.fotos        ?? ([] as string[]),
-    destinatario: aviso?.destinatario ?? "Todos",
+    titulo:             aviso?.titulo             ?? "",
+    cuerpo:             aviso?.cuerpo             ?? "",
+    tipo:               aviso?.tipo               ?? ("institucional" as Tipo),
+    firmado:            aviso?.firmado            ?? "",
+    activo:             aviso?.activo             ?? true,
+    fotos:              aviso?.fotos              ?? ([] as string[]),
+    videos:             aviso?.videos             ?? ([] as string[]),
+    pdfs:               aviso?.pdfs               ?? ([] as string[]),
+    destinatario:       aviso?.destinatario       ?? "Todos",
+    es_evento:          aviso?.es_evento          ?? false,
+    evento_inicio:      aviso?.evento_inicio      ?? "",
+    evento_fin:         aviso?.evento_fin         ?? "",
+    evento_lugar:       aviso?.evento_lugar       ?? "",
+    evento_vestimenta:  aviso?.evento_vestimenta  ?? "",
+    evento_enlace:      aviso?.evento_enlace      ?? "",
   });
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<"foto" | "video" | "pdf" | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [emojiTarget, setEmojiTarget] = useState<"titulo" | "cuerpo" | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const tituloRef = useRef<HTMLInputElement>(null);
-  const cuerpoRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef      = useRef<HTMLInputElement>(null);
+  const videoRef     = useRef<HTMLInputElement>(null);
+  const pdfRef       = useRef<HTMLInputElement>(null);
+  const tituloRef    = useRef<HTMLInputElement>(null);
+  const cuerpoRef    = useRef<HTMLTextAreaElement>(null);
 
   function insertEmoji(em: string) {
     if (!emojiTarget) return;
@@ -149,7 +170,7 @@ function ModalAviso({
     if (!files || files.length === 0) return;
     const remaining = 5 - form.fotos.length;
     if (remaining <= 0) return;
-    setUploading(true);
+    setUploading("foto");
     setErr("");
     try {
       const toUpload = Array.from(files).slice(0, remaining);
@@ -162,7 +183,46 @@ function ModalAviso({
     } catch (uploadErr) {
       setErr(uploadErr instanceof Error ? uploadErr.message : "No se pudo subir la imagen.");
     } finally {
-      setUploading(false);
+      setUploading(null);
+      e.target.value = "";
+    }
+  }
+
+  async function handleVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (form.videos.length >= 3) return;
+    setUploading("video");
+    setErr("");
+    try {
+      const url = await uploadVideo(files[0]);
+      setForm((f) => ({ ...f, videos: [...f.videos, url].slice(0, 3) }));
+    } catch (uploadErr) {
+      setErr(uploadErr instanceof Error ? uploadErr.message : "No se pudo subir el video.");
+    } finally {
+      setUploading(null);
+      e.target.value = "";
+    }
+  }
+
+  async function handlePdfFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (form.pdfs.length >= 5) return;
+    setUploading("pdf");
+    setErr("");
+    try {
+      const toUpload = Array.from(files).slice(0, 5 - form.pdfs.length);
+      const urls: string[] = [];
+      for (const file of toUpload) {
+        const url = await uploadPdf(file);
+        urls.push(url);
+      }
+      setForm((f) => ({ ...f, pdfs: [...f.pdfs, ...urls].slice(0, 5) }));
+    } catch (uploadErr) {
+      setErr(uploadErr instanceof Error ? uploadErr.message : "No se pudo subir el PDF.");
+    } finally {
+      setUploading(null);
       e.target.value = "";
     }
   }
@@ -180,13 +240,21 @@ function ModalAviso({
     setErr("");
     try {
       const body = {
-        titulo:       form.titulo.trim(),
-        cuerpo:       form.cuerpo.trim(),
-        tipo:         form.tipo,
-        firmado:      form.firmado.trim() || null,
-        activo:       form.activo,
-        fotos:        form.fotos,
-        destinatario: form.destinatario,
+        titulo:             form.titulo.trim(),
+        cuerpo:             form.cuerpo.trim(),
+        tipo:               form.tipo,
+        firmado:            form.firmado.trim() || null,
+        activo:             form.activo,
+        fotos:              form.fotos,
+        videos:             form.videos,
+        pdfs:               form.pdfs,
+        destinatario:       form.destinatario,
+        es_evento:          form.es_evento,
+        evento_inicio:      form.es_evento && form.evento_inicio ? form.evento_inicio : null,
+        evento_fin:         form.es_evento && form.evento_fin    ? form.evento_fin    : null,
+        evento_lugar:       form.es_evento ? form.evento_lugar.trim()       || null : null,
+        evento_vestimenta:  form.es_evento ? form.evento_vestimenta.trim()  || null : null,
+        evento_enlace:      form.es_evento ? form.evento_enlace.trim()      || null : null,
       };
       const url  = isEdit ? `/api/avisos/${aviso!.id}` : "/api/avisos";
       const method = isEdit ? "PATCH" : "POST";
@@ -334,7 +402,7 @@ function ModalAviso({
               {form.fotos.length < 5 && (
                 <button
                   type="button"
-                  disabled={uploading}
+                  disabled={uploading !== null}
                   onClick={() => fileRef.current?.click()}
                   className="rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 transition-colors disabled:opacity-50"
                   style={{ aspectRatio: "1/1" }}
@@ -343,12 +411,139 @@ function ModalAviso({
                     <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>
                   </svg>
                   <span className="text-[10px] font-medium">
-                    {uploading ? "..." : `${form.fotos.length}/5`}
+                    {uploading === "foto" ? "⏳" : `${form.fotos.length}/5`}
                   </span>
                 </button>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFile} />
+          </div>
+
+          {/* Videos (máx. 3) */}
+          <div>
+            <label className={labelBase}>
+              Videos{" "}
+              <span className="normal-case font-normal text-slate-400">(opcional · máx. 3 · MP4/WebM)</span>
+            </label>
+            {form.videos.map((url, i) => (
+              <div key={i} className="flex items-center gap-2 mb-1.5">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 flex items-center gap-2 min-w-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-600 flex-shrink-0">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                  </svg>
+                  <span className="text-xs text-slate-500 truncate">Video {i + 1}</span>
+                </div>
+                <button type="button" onClick={() => setForm((f) => ({ ...f, videos: f.videos.filter((_, j) => j !== i) }))}
+                  className="w-6 h-6 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 text-xs flex items-center justify-center hover:bg-red-100 transition-colors">×</button>
+              </div>
+            ))}
+            {form.videos.length < 3 && (
+              <button type="button" disabled={uploading !== null} onClick={() => videoRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                {uploading === "video" ? "Subiendo video..." : `Agregar video (${form.videos.length}/3)`}
+              </button>
+            )}
+            <input ref={videoRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoFile} />
+          </div>
+
+          {/* PDFs (máx. 5) */}
+          <div>
+            <label className={labelBase}>
+              Documentos PDF{" "}
+              <span className="normal-case font-normal text-slate-400">(opcional · máx. 5 · hasta 50 MB)</span>
+            </label>
+            {form.pdfs.map((url, i) => (
+              <div key={i} className="flex items-center gap-2 mb-1.5">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 flex items-center gap-2 min-w-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-red-600 flex-shrink-0">
+                    <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                  </svg>
+                  <span className="text-xs text-slate-500 truncate">PDF {i + 1}</span>
+                </div>
+                <button type="button" onClick={() => setForm((f) => ({ ...f, pdfs: f.pdfs.filter((_, j) => j !== i) }))}
+                  className="w-6 h-6 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 text-xs flex items-center justify-center hover:bg-red-100 transition-colors">×</button>
+              </div>
+            ))}
+            {form.pdfs.length < 5 && (
+              <button type="button" disabled={uploading !== null} onClick={() => pdfRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-500 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                </svg>
+                {uploading === "pdf" ? "Subiendo PDF..." : `Agregar PDF (${form.pdfs.length}/5)`}
+              </button>
+            )}
+            <input ref={pdfRef} type="file" accept="application/pdf" multiple className="hidden" onChange={handlePdfFile} />
+          </div>
+
+          {/* 📅 Evento / Convocatoria */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, es_evento: !f.es_evento }))}
+              className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors ${
+                form.es_evento
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/>
+                </svg>
+                Es un evento / convocatoria
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                form.es_evento ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              }`}>{form.es_evento ? "ON" : "OFF"}</span>
+            </button>
+
+            {form.es_evento && (
+              <div className="px-4 py-3 flex flex-col gap-3">
+                {/* Fechas */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelBase}>Fecha/hora inicio</label>
+                    <input type="datetime-local" value={form.evento_inicio}
+                      onChange={(e) => setForm((f) => ({ ...f, evento_inicio: e.target.value }))}
+                      className={inputBase} />
+                  </div>
+                  <div>
+                    <label className={labelBase}>Fecha/hora fin <span className="normal-case font-normal text-slate-400">(opcional)</span></label>
+                    <input type="datetime-local" value={form.evento_fin}
+                      onChange={(e) => setForm((f) => ({ ...f, evento_fin: e.target.value }))}
+                      className={inputBase} />
+                  </div>
+                </div>
+                {/* Lugar */}
+                <div>
+                  <label className={labelBase}>Lugar / sede</label>
+                  <input type="text" value={form.evento_lugar}
+                    onChange={(e) => setForm((f) => ({ ...f, evento_lugar: e.target.value }))}
+                    placeholder="Ej. Explanada de la institución"
+                    className={inputBase} />
+                </div>
+                {/* Vestimenta */}
+                <div>
+                  <label className={labelBase}>Vestimenta <span className="normal-case font-normal text-slate-400">(opcional)</span></label>
+                  <input type="text" value={form.evento_vestimenta}
+                    onChange={(e) => setForm((f) => ({ ...f, evento_vestimenta: e.target.value }))}
+                    placeholder="Ej. Formal o uniforme escolar"
+                    className={inputBase} />
+                </div>
+                {/* Enlace externo */}
+                <div>
+                  <label className={labelBase}>Enlace externo <span className="normal-case font-normal text-slate-400">(Google Drive, Forms, etc.)</span></label>
+                  <input type="url" value={form.evento_enlace}
+                    onChange={(e) => setForm((f) => ({ ...f, evento_enlace: e.target.value }))}
+                    placeholder="https://drive.google.com/..."
+                    className={inputBase} />
+                </div>
+              </div>
+            )}
           </div>
 
           {err && <p className="text-xs text-red-600 dark:text-red-400">{err}</p>}

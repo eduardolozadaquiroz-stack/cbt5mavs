@@ -75,6 +75,34 @@ export async function PATCH(
       .slice(0, 5);
     updates.fotos = fotosArr;
   }
+  if (Array.isArray(body.videos)) {
+    updates.videos = (body.videos as unknown[])
+      .filter((u): u is string => typeof u === "string")
+      .map((u) => sanitize(u, 500))
+      .slice(0, 3);
+  }
+  if (Array.isArray(body.pdfs)) {
+    updates.pdfs = (body.pdfs as unknown[])
+      .filter((u): u is string => typeof u === "string")
+      .map((u) => sanitize(u, 500))
+      .slice(0, 5);
+  }
+  if (typeof body.es_evento === "boolean") {
+    updates.es_evento = body.es_evento;
+    if (!body.es_evento) {
+      // limpiar campos de evento al desactivar
+      updates.evento_inicio    = null;
+      updates.evento_fin       = null;
+      updates.evento_lugar     = null;
+      updates.evento_vestimenta = null;
+      updates.evento_enlace    = null;
+    }
+  }
+  if (typeof body.evento_inicio === "string")    updates.evento_inicio    = body.evento_inicio;
+  if (typeof body.evento_fin === "string")       updates.evento_fin       = body.evento_fin;
+  if (typeof body.evento_lugar === "string")     updates.evento_lugar     = sanitize(body.evento_lugar, 300);
+  if (typeof body.evento_vestimenta === "string") updates.evento_vestimenta = sanitize(body.evento_vestimenta, 200);
+  if (typeof body.evento_enlace === "string")    updates.evento_enlace    = sanitize(body.evento_enlace, 500);
   if (typeof body.activo === "boolean") {
     updates.estado = body.activo ? "publicado" : "borrador";
     // Si se está publicando y aún no tiene fecha, asignarla ahora

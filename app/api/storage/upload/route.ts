@@ -36,8 +36,15 @@ const BUCKET_CONFIG: Record<
     roles: ["admin"],
   },
   avisos: {
-    maxBytes: 5 * 1024 * 1024, // 5 MB
-    allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"],
+    maxBytes: 50 * 1024 * 1024, // 50 MB (cubre videos medianos)
+    allowedMimes: [
+      // Imágenes
+      "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+      // Videos
+      "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo",
+      // Documentos
+      "application/pdf",
+    ],
     roles: ["admin", "maestro"],
   },
   site: {

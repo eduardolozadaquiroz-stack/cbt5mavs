@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("avisos")
-    .select("id, titulo, contenido, tipo, estado, fotos, fecha_publicacion, destinatario, autor_id", { count: "exact" })
+    .select("id, titulo, contenido, tipo, estado, fotos, videos, pdfs, fecha_publicacion, destinatario, autor_id, es_evento, evento_inicio, evento_fin, evento_lugar, evento_vestimenta, evento_enlace", { count: "exact" })
     .order("fecha_publicacion", { ascending: false })
     .range(from, to);
 
@@ -54,9 +54,17 @@ export async function GET(request: NextRequest) {
     firmado: null as string | null,
     activo: a.estado === "publicado",
     fotos: (a.fotos as string[]) ?? [],
+    videos: (a.videos as string[]) ?? [],
+    pdfs: (a.pdfs as string[]) ?? [],
     fecha_publicacion: a.fecha_publicacion,
     destinatario: (a.destinatario as string) ?? "Todos",
     autor_id: a.autor_id,
+    es_evento: (a.es_evento as boolean) ?? false,
+    evento_inicio: (a.evento_inicio as string | null) ?? null,
+    evento_fin: (a.evento_fin as string | null) ?? null,
+    evento_lugar: (a.evento_lugar as string | null) ?? null,
+    evento_vestimenta: (a.evento_vestimenta as string | null) ?? null,
+    evento_enlace: (a.evento_enlace as string | null) ?? null,
   }));
 
   return NextResponse.json({ avisos, total: count ?? 0, page, limit });
@@ -83,6 +91,26 @@ export async function POST(request: NextRequest) {
     .map((u) => sanitize(u, 500))
     .filter((u) => isSafeImageUrl(u))
     .slice(0, 5);
+
+  // Videos y PDFs (solo URLs de Supabase Storage)
+  function pickStorageUrls(raw: unknown, max: number): string[] {
+    if (!Array.isArray(raw)) return [];
+    return (raw as unknown[])
+      .filter((u): u is string => typeof u === "string")
+      .map((u) => sanitize(u, 500))
+      .filter((u) => isSafeImageUrl(u))
+      .slice(0, max);
+  }
+  const videosArr = pickStorageUrls(body.videos, 3);
+  const pdfsArr   = pickStorageUrls(body.pdfs, 5);
+
+  // Campos de evento
+  const esEvento       = body.es_evento === true;
+  const eventoInicio   = esEvento && typeof body.evento_inicio === "string"   ? body.evento_inicio   : null;
+  const eventoFin      = esEvento && typeof body.evento_fin === "string"      ? body.evento_fin      : null;
+  const eventoLugar    = esEvento && typeof body.evento_lugar === "string"    ? sanitize(body.evento_lugar, 300)    : null;
+  const eventoVest     = esEvento && typeof body.evento_vestimenta === "string" ? sanitize(body.evento_vestimenta, 200) : null;
+  const eventoEnlace   = esEvento && typeof body.evento_enlace === "string"   ? sanitize(body.evento_enlace, 500)   : null;
   const VALID_DEST = ["Todos", "Alumnos", "Maestros", "Padres"];
   const destinatario = VALID_DEST.includes(body.destinatario as string)
     ? (body.destinatario as string)
@@ -101,6 +129,14 @@ export async function POST(request: NextRequest) {
       tipo,
       destinatario,
       fotos: fotosArr,
+      videos: videosArr,
+      pdfs: pdfsArr,
+      es_evento: esEvento,
+      evento_inicio: eventoInicio,
+      evento_fin: eventoFin,
+      evento_lugar: eventoLugar,
+      evento_vestimenta: eventoVest,
+      evento_enlace: eventoEnlace,
       autor_id: user.db_id,
       estado: activoRaw ? "publicado" : "borrador",
       fecha_publicacion: activoRaw ? new Date().toISOString() : null,

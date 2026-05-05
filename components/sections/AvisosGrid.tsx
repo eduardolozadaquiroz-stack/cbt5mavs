@@ -8,7 +8,15 @@ interface Aviso {
   cuerpo: string;
   tipo: string;
   fotos: string[];
+  videos: string[];
+  pdfs: string[];
   fecha_publicacion: string | null;
+  es_evento: boolean;
+  evento_inicio: string | null;
+  evento_fin: string | null;
+  evento_lugar: string | null;
+  evento_vestimenta: string | null;
+  evento_enlace: string | null;
 }
 
 const TIPO_COLORS: Record<string, string> = {
@@ -32,6 +40,17 @@ function formatFecha(f: string | null): string {
   const d = new Date(f);
   if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function formatHora(f: string | null): string {
+  if (!f) return "";
+  const d = new Date(f);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+}
+
+function pdfName(url: string): string {
+  try { return decodeURIComponent(url.split("/").pop() ?? "documento.pdf"); } catch { return "documento.pdf"; }
 }
 
 export default function AvisosGrid() {
@@ -105,6 +124,7 @@ export default function AvisosGrid() {
               </div>
             )}
 
+            {/* card: mostrar badge de video/pdf si existen */}
             <div className={`p-5 flex flex-col flex-grow ${aviso.fotos.length === 0 ? "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800" : ""}`}>
               <div className="flex justify-between items-start mb-2 gap-2">
                 {aviso.fotos.length === 0 && (
@@ -119,6 +139,26 @@ export default function AvisosGrid() {
                   </div>
                 )}
               </div>
+              {/* badges de adjuntos */}
+              {(aviso.es_evento || (aviso.videos?.length ?? 0) > 0 || (aviso.pdfs?.length ?? 0) > 0) && (
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                  {aviso.es_evento && (
+                    <span className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      🗓️ Evento
+                    </span>
+                  )}
+                  {(aviso.videos?.length ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      🎥 {aviso.videos.length} video{aviso.videos.length > 1 ? "s" : ""}
+                    </span>
+                  )}
+                  {(aviso.pdfs?.length ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      📄 {aviso.pdfs.length} PDF{aviso.pdfs.length > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              )}
               <h2 className="font-title-sm text-title-sm text-on-background mb-2">{aviso.titulo}</h2>
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-4 flex-grow line-clamp-3">{aviso.cuerpo}</p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:underline mt-auto">
@@ -170,7 +210,74 @@ export default function AvisosGrid() {
                 )}
               </div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">{selected.titulo}</h2>
-              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{selected.cuerpo}</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line mb-4">{selected.cuerpo}</p>
+
+              {/* Banner de evento */}
+              {selected.es_evento && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 my-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">🗓️</span>
+                    <h3 className="font-bold text-blue-900 dark:text-blue-200 text-sm">Información del Evento</h3>
+                  </div>
+                  {selected.evento_inicio && (
+                    <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                      📅 <strong>Inicio:</strong> {formatFecha(selected.evento_inicio)} · {formatHora(selected.evento_inicio)}
+                    </p>
+                  )}
+                  {selected.evento_fin && (
+                    <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">
+                      📅 <strong>Fin:</strong> {formatFecha(selected.evento_fin)} · {formatHora(selected.evento_fin)}
+                    </p>
+                  )}
+                  {selected.evento_lugar && (
+                    <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">📍 {selected.evento_lugar}</p>
+                  )}
+                  {selected.evento_vestimenta && (
+                    <p className="text-sm text-blue-800 dark:text-blue-300 mb-1">👔 <strong>Vestimenta:</strong> {selected.evento_vestimenta}</p>
+                  )}
+                  {selected.evento_enlace && (
+                    <a href={selected.evento_enlace} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                      🔗 Ver más información
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Videos */}
+              {(selected.videos?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Videos adjuntos</h4>
+                  <div className="flex flex-col gap-3">
+                    {selected.videos.map((url, i) => (
+                      <video key={i} controls className="w-full rounded-xl bg-black" src={url}>
+                        Tu navegador no soporta video HTML5.
+                      </video>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* PDFs */}
+              {(selected.pdfs?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Documentos</h4>
+                  <div className="flex flex-col gap-2">
+                    {selected.pdfs.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-600 flex-shrink-0">
+                          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                        </svg>
+                        <span className="text-sm font-medium text-red-700 dark:text-red-300 truncate">{pdfName(url)}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-red-500 ml-auto flex-shrink-0">
+                          <path d="M5 20h14v-2H5v2zm7-18L5.33 9h4.84v4h3.66V9h4.84L12 2z"/>
+                        </svg>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 onClick={() => setSelected(null)}
                 className="mt-6 w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors"
