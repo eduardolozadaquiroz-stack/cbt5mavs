@@ -93,9 +93,9 @@ export default function ReinscripcionCard({ className = "" }: ReinscripcionCardP
             )}
           </div>
 
-          {/* CTA */}
-          {r.linkFormatos && (
-            <div className="flex-shrink-0 self-start sm:self-center">
+          {/* CTA + imagen de pago */}
+          <div className="flex-shrink-0 self-start sm:self-center flex flex-col items-start sm:items-end gap-2">
+            {r.linkFormatos && (
               <a
                 href={r.linkFormatos}
                 target="_blank"
@@ -107,8 +107,21 @@ export default function ReinscripcionCard({ className = "" }: ReinscripcionCardP
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
-            </div>
-          )}
+            )}
+            {r.imagenPago && (
+              <a
+                href={r.imagenPago}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-600 text-amber-800 dark:text-amber-200 text-sm font-medium rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Referencia de pago
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import SavedToast from "@/components/SavedToast";
+import FileUploadInput from "@/components/dashboard/FileUploadInput";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 const BASE = "/dashboard/administrador";
@@ -141,7 +142,7 @@ export default function ReinscripcionEditPage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
                 📄 Documentos y Formatos
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
                   <label className={labelBase}>Documentos requeridos</label>
                   <textarea
@@ -152,14 +153,39 @@ export default function ReinscripcionEditPage() {
                   />
                   <p className="text-xs text-slate-400 mt-1">Separar con comas. Ej: Boleta, CURP, Comprobante de domicilio</p>
                 </div>
+
+                {/* Link / archivo de formatos */}
                 <div>
-                  <label className={labelBase}>Link a formatos / trámites</label>
-                  <input
-                    type="url"
-                    value={form.linkFormatos}
-                    onChange={(e) => set("linkFormatos", e.target.value)}
-                    placeholder="https://example.com/formatos-reinscripcion"
-                    className={inputBase}
+                  <label className={labelBase}>Formatos / instrucciones (PDF o imagen)</label>
+                  <FileUploadInput
+                    currentUrl={form.linkFormatos}
+                    label="Subir formato PDF / imagen"
+                    bucket="documentos"
+                    folder="reinscripcion/formatos"
+                    onUploaded={(url) => set("linkFormatos", url)}
+                  />
+                  <div className="mt-2">
+                    <label className="text-xs text-slate-400 block mb-1">O pega un enlace externo</label>
+                    <input
+                      type="url"
+                      value={form.linkFormatos}
+                      onChange={(e) => set("linkFormatos", e.target.value)}
+                      placeholder="https://example.com/formatos-reinscripcion"
+                      className={inputBase}
+                    />
+                  </div>
+                </div>
+
+                {/* Comprobante / referencia de pago */}
+                <div>
+                  <label className={labelBase}>Referencia de pago (imagen o PDF)</label>
+                  <p className="text-xs text-slate-400 mb-2">Sube una imagen con los datos bancarios o referencia de pago para los alumnos.</p>
+                  <FileUploadInput
+                    currentUrl={form.imagenPago}
+                    label="Subir referencia de pago"
+                    bucket="documentos"
+                    folder="reinscripcion/pago"
+                    onUploaded={(url) => set("imagenPago", url)}
                   />
                 </div>
               </div>

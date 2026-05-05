@@ -130,6 +130,7 @@ export interface ReinscripcionConfig {
   costoReinscripcion: number;
   documentosRequeridos: string;
   linkFormatos: string;
+  imagenPago: string;
   avisoImportante: string;
 }
 
@@ -338,6 +339,7 @@ const DEFAULT_CONFIG: AdminConfig = {
     costoReinscripcion: 0,
     documentosRequeridos: "Boleta de calificaciones, Credencial escolar",
     linkFormatos: "",
+    imagenPago: "",
     avisoImportante: "",
   },
   contacto: {
