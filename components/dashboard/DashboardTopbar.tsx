@@ -48,8 +48,8 @@ const IconChevron = () => (
 export default function DashboardTopbar({
   userImageSrc = "",
   userImageAlt,
-  userName = "Administrador",
-  userRole = "Admin",
+  userName = "",
+  userRole = "",
   activeTopLink = "dashboard",
   showSearch = false,
   linkBase,
@@ -157,7 +157,9 @@ export default function DashboardTopbar({
 
 
   // Iniciales del usuario para avatar fallback
-  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const initials = displayName
+    ? displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+    : "…";
 
   // Mobile nav links
   const mobileRole = linkBase?.includes("/alumno") ? "alumno" :
