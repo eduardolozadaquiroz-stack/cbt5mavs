@@ -117,8 +117,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 
-  // Soft delete
-  const { error } = await admin.from("avisos").update({ estado: "archivado" }).eq("id", id);
+  // Hard delete (solo se llega aquí desde el segundo paso del flujo, cuando ya está archivado)
+  const { error } = await admin.from("avisos").delete().eq("id", id);
   if (error) return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
 
   return NextResponse.json({ ok: true });
