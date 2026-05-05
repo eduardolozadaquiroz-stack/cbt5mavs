@@ -43,7 +43,7 @@ export async function GET() {
   const solicitudMap = new Map((solicitudes ?? []).map(s => [s.alumno_id as string, s]));
 
   const alumnos = vinculos.map(v => {
-    const alumno  = v.alumnos as Record<string, unknown> | null;
+    const alumno  = v.alumnos as unknown as Record<string, unknown> | null;
     const usuario = alumno?.usuarios as Record<string, unknown> | null;
     const sol     = solicitudMap.get(v.alumno_id as string) ?? null;
     const docs    = (sol?.reinscripcion_documentos as { id: string; nombre: string; estado: string }[] | null) ?? [];
