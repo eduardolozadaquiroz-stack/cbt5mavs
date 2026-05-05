@@ -160,7 +160,7 @@ export default function ReinscripcionEditPage() {
                   <FileUploadInput
                     currentUrl={form.linkFormatos}
                     label="Subir formato PDF / imagen"
-                    bucket="documentos"
+                    bucket="avisos"
                     folder="reinscripcion/formatos"
                     onUploaded={(url) => set("linkFormatos", url)}
                   />
@@ -183,7 +183,7 @@ export default function ReinscripcionEditPage() {
                   <FileUploadInput
                     currentUrl={form.imagenPago}
                     label="Subir referencia de pago"
-                    bucket="documentos"
+                    bucket="avisos"
                     folder="reinscripcion/pago"
                     onUploaded={(url) => set("imagenPago", url)}
                   />
