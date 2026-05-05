@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
-import { randomUUID } from "crypto";
+// crypto.randomUUID() está disponible como global en Cloudflare Workers y Node.js 19+
 
 // Configuración de buckets permitidos y sus restricciones
 const BUCKET_CONFIG: Record<
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
   // Sanitizar nombre y crear path único para evitar colisiones
   const ext = sanitizeFilename(file.name).split(".").pop() ?? "bin";
-  const path = `${user.db_id}/${randomUUID()}.${ext}`;
+  const path = `${user.db_id}/${crypto.randomUUID()}.${ext}`;
 
   const bytes = await file.arrayBuffer();
   const admin = createSupabaseAdminClient();

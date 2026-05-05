@@ -67,7 +67,7 @@ export async function PATCH(
   const updates: Record<string, string | boolean | string[] | null> = {};
   if (typeof body.titulo === "string") updates.titulo = sanitize(body.titulo, 200);
   if (typeof body.cuerpo === "string") updates.contenido = sanitize(body.cuerpo, 4000);
-  if (typeof body.tipo === "string") updates.tipo = sanitize(body.tipo, 50);
+  if (typeof body.tipo === "string") updates.tipo = sanitize(body.tipo, 50).toLowerCase();
   if (typeof body.imagen_url === "string") {
     const url = sanitize(body.imagen_url, 500);
     updates.fotos = url ? [url] : [];

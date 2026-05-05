@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const titulo     = sanitize(body.titulo as string, 200);
   const cuerpo     = sanitize(body.cuerpo as string, 4000);
-  const tipo       = sanitize(body.tipo as string, 50);
+  const tipo       = sanitize(body.tipo as string, 50).toLowerCase();
   const imagen_url = sanitize(body.imagen_url as string, 500);
   const activoRaw  = body.activo !== false; // default true
 

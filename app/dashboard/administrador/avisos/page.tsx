@@ -6,7 +6,15 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 const BASE = "/dashboard/administrador";
 
-type Tipo = "Urgente" | "Académico" | "Administrativo" | "Institucional" | "Sistema";
+type Tipo = "urgente" | "academico" | "administrativo" | "institucional" | "sistema";
+
+const TIPO_LABEL: Record<Tipo, string> = {
+  urgente:        "Urgente",
+  academico:      "Académico",
+  administrativo: "Administrativo",
+  institucional:  "Institucional",
+  sistema:        "Sistema",
+};
 
 interface Aviso {
   id: string;
@@ -20,14 +28,14 @@ interface Aviso {
 }
 
 const TIPO_COLORS: Record<Tipo, string> = {
-  Urgente:        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  Académico:      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  Administrativo: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
-  Institucional:  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
-  Sistema:        "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  urgente:        "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  academico:      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  administrativo: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
+  institucional:  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
+  sistema:        "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
-const TIPOS: Tipo[] = ["Urgente", "Académico", "Administrativo", "Institucional", "Sistema"];
+const TIPOS: Tipo[] = ["urgente", "academico", "administrativo", "institucional", "sistema"];
 
 async function uploadFoto(file: File): Promise<string> {
   const fd = new FormData();
@@ -152,7 +160,7 @@ function ModalAviso({
             <div>
               <label className={labelBase}>Tipo</label>
               <select value={form.tipo} onChange={(e) => set("tipo", e.target.value)} className={inputBase}>
-                {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TIPOS.map((t) => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
               </select>
             </div>
             <div>
@@ -358,7 +366,7 @@ export default function AvisosAdminPage() {
     total:      avisos.length,
     publicados: avisos.filter((a) => a.activo).length,
     archivados: avisos.filter((a) => !a.activo).length,
-    urgentes:   avisos.filter((a) => a.tipo === "Urgente" && a.activo).length,
+    urgentes:   avisos.filter((a) => a.tipo === "urgente" && a.activo).length,
   };
 
   const fechaDisplay = (f: string | null) =>
@@ -440,7 +448,7 @@ export default function AvisosAdminPage() {
                     onClick={() => setFiltroTipo(t)}
                     className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${filtroTipo === t ? "bg-blue-700 text-white border-blue-700" : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
                   >
-                    {t}
+                    {t === "Todos" ? "Todos" : TIPO_LABEL[t as Tipo]}
                   </button>
                 ))}
               </div>
@@ -472,7 +480,7 @@ export default function AvisosAdminPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold ${TIPO_COLORS[a.tipo]}`}>{a.tipo}</span>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold ${TIPO_COLORS[a.tipo]}`}>{TIPO_LABEL[a.tipo] ?? a.tipo}</span>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${a.activo ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
                         {a.activo ? "Publicado" : "Archivado"}
                       </span>
