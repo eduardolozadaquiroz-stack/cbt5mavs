@@ -73,6 +73,10 @@ export async function PATCH(
     updates.fotos = url ? [url] : [];
   }
   if (typeof body.activo === "boolean") updates.estado = body.activo ? "publicado" : "borrador";
+  if (typeof body.destinatario === "string") {
+    const VALID_DEST = ["Todos", "Alumnos", "Maestros", "Padres"];
+    if (VALID_DEST.includes(body.destinatario)) updates.destinatario = body.destinatario;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Sin cambios" }, { status: 400 });

@@ -29,7 +29,7 @@ export default function AvisosMaestroPage() {
   const [filtro, setFiltro] = useState("Todos");
 
   useEffect(() => {
-    fetch("/api/avisos")
+    fetch("/api/avisos?para=maestros")
       .then((r) => r.json())
       .then((d) => {
         setAvisos(d.avisos ?? []);

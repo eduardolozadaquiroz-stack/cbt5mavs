@@ -44,7 +44,7 @@ export default function PadresAvisosPage() {
     const alumnoId = sessionStorage.getItem("selectedAlumnoId");
     if (!alumnoId) { router.replace("/dashboard/padres/seleccionar-alumno"); return; }
 
-    fetch("/api/avisos?limit=50", { credentials: "include" })
+    fetch("/api/avisos?limit=50&para=padres", { credentials: "include" })
       .then((r) => {
         if (r.status === 401) { router.replace("/login"); return null; }
         return r.json();

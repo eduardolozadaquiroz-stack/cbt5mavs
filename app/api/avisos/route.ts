@@ -13,13 +13,14 @@ export async function GET(request: NextRequest) {
   const limit   = Math.min(50, parseInt(searchParams.get("limit") ?? "10", 10));
   const tipo    = sanitize(searchParams.get("tipo") ?? "", 50);
   const showAll = searchParams.get("all") === "1";
+  const para    = sanitize(searchParams.get("para") ?? "", 20); // alumnos|maestros|padres|todos
   const from    = (page - 1) * limit;
   const to      = from + limit - 1;
 
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("avisos")
-    .select("id, titulo, contenido, tipo, estado, fotos, fecha_publicacion, autor_id", { count: "exact" })
+    .select("id, titulo, contenido, tipo, estado, fotos, fecha_publicacion, destinatario, autor_id", { count: "exact" })
     .order("fecha_publicacion", { ascending: false })
     .range(from, to);
 
@@ -35,6 +36,12 @@ export async function GET(request: NextRequest) {
 
   if (tipo) query = query.eq("tipo", tipo);
 
+  // Filtrar por destinatario: mostrar 'Todos' + el rol específico
+  const DEST_MAP: Record<string, string> = { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" };
+  if (para && DEST_MAP[para.toLowerCase()]) {
+    query = query.or(`destinatario.eq.Todos,destinatario.eq.${DEST_MAP[para.toLowerCase()]}`);
+  }
+
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: "Error al obtener avisos" }, { status: 500 });
 
@@ -48,6 +55,7 @@ export async function GET(request: NextRequest) {
     activo: a.estado === "publicado",
     imagen_url: (a.fotos as string[])?.[0] ?? null,
     fecha_publicacion: a.fecha_publicacion,
+    destinatario: (a.destinatario as string) ?? "Todos",
     autor_id: a.autor_id,
   }));
 
@@ -68,6 +76,10 @@ export async function POST(request: NextRequest) {
   const tipo       = sanitize(body.tipo as string, 50).toLowerCase();
   const imagen_url = sanitize(body.imagen_url as string, 500);
   const activoRaw  = body.activo !== false; // default true
+  const VALID_DEST = ["Todos", "Alumnos", "Maestros", "Padres"];
+  const destinatario = VALID_DEST.includes(body.destinatario as string)
+    ? (body.destinatario as string)
+    : "Todos";
 
   if (!titulo || !cuerpo || !tipo) {
     return NextResponse.json({ error: "titulo, cuerpo y tipo son requeridos" }, { status: 400 });
@@ -85,6 +97,7 @@ export async function POST(request: NextRequest) {
       titulo,
       contenido: cuerpo,
       tipo,
+      destinatario,
       fotos: imagen_url ? [imagen_url] : [],
       autor_id: user.db_id,
       estado: activoRaw ? "publicado" : "borrador",

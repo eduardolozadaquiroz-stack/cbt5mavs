@@ -25,6 +25,7 @@ interface Aviso {
   fecha_publicacion: string | null;
   activo: boolean;
   imagen_url: string | null;
+  destinatario: string;
 }
 
 const TIPO_COLORS: Record<Tipo, string> = {
@@ -59,12 +60,13 @@ function ModalAviso({
 }) {
   const isEdit = !!aviso?.id;
   const [form, setForm] = useState({
-    titulo:    aviso?.titulo    ?? "",
-    cuerpo:    aviso?.cuerpo    ?? "",
-    tipo:      aviso?.tipo      ?? ("Académico" as Tipo),
-    firmado:   aviso?.firmado   ?? "",
-    activo:    aviso?.activo    ?? true,
-    imagen_url: aviso?.imagen_url ?? "",
+    titulo:       aviso?.titulo       ?? "",
+    cuerpo:       aviso?.cuerpo       ?? "",
+    tipo:         aviso?.tipo         ?? ("institucional" as Tipo),
+    firmado:      aviso?.firmado      ?? "",
+    activo:       aviso?.activo       ?? true,
+    imagen_url:   aviso?.imagen_url   ?? "",
+    destinatario: aviso?.destinatario ?? "Todos",
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,12 +103,13 @@ function ModalAviso({
     setErr("");
     try {
       const body = {
-        titulo:    form.titulo.trim(),
-        cuerpo:    form.cuerpo.trim(),
-        tipo:      form.tipo,
-        firmado:   form.firmado.trim() || null,
-        activo:    form.activo,
-        imagen_url: form.imagen_url.trim() || null,
+        titulo:       form.titulo.trim(),
+        cuerpo:       form.cuerpo.trim(),
+        tipo:         form.tipo,
+        firmado:      form.firmado.trim() || null,
+        activo:       form.activo,
+        imagen_url:   form.imagen_url.trim() || null,
+        destinatario: form.destinatario,
       };
       const url  = isEdit ? `/api/avisos/${aviso!.id}` : "/api/avisos";
       const method = isEdit ? "PATCH" : "POST";
@@ -174,6 +177,17 @@ function ModalAviso({
                 <option value="archivado">Archivado</option>
               </select>
             </div>
+          </div>
+
+          {/* Destinatario */}
+          <div>
+            <label className={labelBase}>Destinatario</label>
+            <select value={form.destinatario} onChange={(e) => set("destinatario", e.target.value)} className={inputBase}>
+              <option value="Todos">Todos (público general)</option>
+              <option value="Alumnos">Solo Alumnos</option>
+              <option value="Maestros">Solo Maestros</option>
+              <option value="Padres">Solo Padres</option>
+            </select>
           </div>
 
           {/* Firmado */}

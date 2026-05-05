@@ -9,19 +9,21 @@ export interface Aviso {
   contenido: string;
   tipo: string;
   imagen_url: string | null;
-  fecha_publicacion: string;
+  fecha_publicacion: string | null;
   activo: boolean;
   autor_id: string | null;
+  destinatario: string;
 }
 
-export function useRealtimeAvisos() {
+export function useRealtimeAvisos(para?: "alumnos" | "maestros" | "padres") {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAvisos = useCallback(async () => {
     try {
-      const res = await fetch("/api/avisos?limit=50", { credentials: "include" });
+      const url = `/api/avisos?limit=50${para ? `&para=${para}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Error al cargar avisos");
       const json = await res.json();
       setAvisos(json.avisos ?? []);
@@ -30,7 +32,7 @@ export function useRealtimeAvisos() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [para]);
 
   useEffect(() => {
     fetchAvisos();

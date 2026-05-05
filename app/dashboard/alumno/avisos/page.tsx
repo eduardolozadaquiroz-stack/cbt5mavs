@@ -8,13 +8,13 @@ const AVATAR = "";
 
 export default function AvisosInternoPage() {
   const [filtro, setFiltro] = useState("Todos");
-  const { avisos: allAvisos, loading, error } = useRealtimeAvisos();
+  const { avisos: allAvisos, loading, error } = useRealtimeAvisos("alumnos");
 
   const avisosFiltrados = filtro === "Todos"
     ? allAvisos
-    : allAvisos.filter((a) => a.tipo === filtro);
+    : allAvisos.filter((a) => a.tipo === filtro.toLowerCase());
 
-  const urgentes = allAvisos.filter((a) => a.tipo === "urgente" || a.tipo === "Urgente").length;
+  const urgentes = allAvisos.filter((a) => a.tipo === "urgente").length;
   return (
     <>
       <DashboardTopbar
@@ -83,7 +83,9 @@ export default function AvisosInternoPage() {
                       </span>
                       <span className="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">calendar_today</span>
-                        {new Date(aviso.fecha_publicacion).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+                        {aviso.fecha_publicacion
+                          ? new Date(aviso.fecha_publicacion).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })
+                          : "Sin fecha"}
                       </span>
                     </div>
                   </div>
