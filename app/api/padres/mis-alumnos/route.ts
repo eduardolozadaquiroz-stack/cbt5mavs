@@ -11,7 +11,7 @@
  */
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("api/padres/mis-alumnos");
@@ -21,11 +21,11 @@ export async function GET() {
   const [authUser, authErr] = await requireRole("padres");
   if (authErr) return authErr;
 
-  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
 
   // 2. Consultar solo los alumnos vinculados a ESTE tutor
   //    La columna tutor_id = authUser.db_id (ID interno, no auth_id externo)
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("alumno_tutor")
     .select(`
       alumno_id,
@@ -34,7 +34,8 @@ export async function GET() {
         semestre_actual,
         estatus,
         carreras ( nombre, clave ),
-        usuarios ( nombre, apellido_paterno, apellido_materno )
+        usuarios ( nombre, apellido_paterno, apellido_materno ),
+        alumno_grupo ( activo, grupos ( nombre ) )
       )
     `)
     .eq("tutor_id", authUser.db_id);
@@ -55,17 +56,19 @@ export async function GET() {
     const alumno  = row.alumnos  as Record<string, unknown> | null;
     const usuario = alumno?.usuarios as Record<string, unknown> | null;
     const carrera = alumno?.carreras as Record<string, unknown> | null;
+    const gruposActivos = (alumno?.alumno_grupo as Array<{ activo: boolean; grupos: { nombre: string } | null }> | null)
+      ?.filter(g => g.activo) ?? [];
 
     return {
       alumno_id: row.alumno_id as string,
       matricula: alumno?.matricula as string,
       nombre: usuario
-        ? [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno]
+        ? [usuario.apellido_paterno, usuario.apellido_materno, usuario.nombre]
             .filter(Boolean)
             .join(" ")
         : "Alumno",
       semestre: alumno?.semestre_actual as number,
-      grupo:    "—",
+      grupo:    gruposActivos[0]?.grupos?.nombre ?? "—",
       carrera:  (carrera?.nombre as string) ?? "—",
       estatus:  alumno?.estatus as string,
     };

@@ -29,12 +29,38 @@ export async function GET(
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("usuarios")
-    .select("id, nombre, correo:email, rol, telefono, foto_url, activo, created_at")
+    .select("id, nombre, apellido_paterno, apellido_materno, correo:email, rol, telefono, foto_url, activo, created_at")
     .eq("id", id)
     .single();
 
   if (error || !data) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
-  return NextResponse.json(data);
+
+  // Obtener datos extendidos según el rol
+  let alumno = null, maestro = null, padre = null;
+  if (data.rol === "alumno") {
+    const { data: a } = await admin
+      .from("alumnos")
+      .select("matricula, curp, carrera_id, semestre_actual, sexo")
+      .eq("id", id)
+      .maybeSingle();
+    alumno = a ?? null;
+  } else if (data.rol === "maestro") {
+    const { data: m } = await admin
+      .from("maestros")
+      .select("rfc, especialidad, tipo_contrato")
+      .eq("id", id)
+      .maybeSingle();
+    maestro = m ?? null;
+  } else if (data.rol === "padres") {
+    const { data: p } = await admin
+      .from("padres_tutores")
+      .select("curp, parentesco")
+      .eq("id", id)
+      .maybeSingle();
+    padre = p ?? null;
+  }
+
+  return NextResponse.json({ ...data, alumno, maestro, padre });
 }
 
 export async function PATCH(
@@ -68,6 +94,36 @@ export async function PATCH(
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from("usuarios").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+
+  // Actualizar tabla alumnos si se proporcionaron campos específicos
+  const alumnoUpdates: Record<string, unknown> = {};
+  if (typeof body.matricula === "string")       alumnoUpdates.matricula       = sanitize(body.matricula, 20);
+  if (typeof body.curp === "string")            alumnoUpdates.curp            = sanitize((body.curp as string).toUpperCase(), 18);
+  if (typeof body.carrera_id === "string" && isUUID(body.carrera_id as string)) alumnoUpdates.carrera_id = body.carrera_id;
+  if (typeof body.semestre_actual === "number") alumnoUpdates.semestre_actual = body.semestre_actual;
+  if (typeof body.sexo === "string")            alumnoUpdates.sexo            = ["M", "F", "NB"].includes(body.sexo as string) ? body.sexo : null;
+  if (Object.keys(alumnoUpdates).length > 0) {
+    await admin.from("alumnos").update(alumnoUpdates).eq("id", id);
+  }
+
+  // Actualizar tabla maestros si se proporcionaron campos específicos
+  const maestroUpdates: Record<string, unknown> = {};
+  if (typeof body.rfc === "string")          maestroUpdates.rfc          = sanitize((body.rfc as string).toUpperCase(), 13) || null;
+  if (typeof body.especialidad === "string") maestroUpdates.especialidad = sanitize(body.especialidad as string, 100) || null;
+  if (typeof body.tipo_contrato === "string" && ["base","horas","interino"].includes(body.tipo_contrato as string))
+    maestroUpdates.tipo_contrato = body.tipo_contrato;
+  if (Object.keys(maestroUpdates).length > 0) {
+    await admin.from("maestros").update(maestroUpdates).eq("id", id);
+  }
+
+  // Actualizar tabla padres_tutores si se proporcionaron campos específicos
+  const padresUpdates: Record<string, unknown> = {};
+  if (typeof body.curp_tutor === "string")  padresUpdates.curp       = sanitize((body.curp_tutor as string).toUpperCase(), 18) || null;
+  if (typeof body.parentesco === "string" && ["padre","madre","tutor_legal","otro"].includes(body.parentesco as string))
+    padresUpdates.parentesco = body.parentesco;
+  if (Object.keys(padresUpdates).length > 0) {
+    await admin.from("padres_tutores").update(padresUpdates).eq("id", id);
+  }
 
   return NextResponse.json({ ok: true });
 }

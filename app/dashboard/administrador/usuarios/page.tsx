@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 interface Carrera { id: string; nombre: string; clave: string; }
+interface Grupo   { id: string; nombre: string; semestre: number; turno: string; }
 
 const BASE = "/dashboard/administrador";
 
@@ -66,7 +67,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
     apellido_paterno: "", apellido_materno: "", nombre: "", email: "",
     rol: "Alumno" as RolNuevo, pw: "", pw2: "",
     // Alumno
-    matricula: "", curp: "", fecha_nacimiento: "", carrera_id: "", semestre_actual: "1", sexo: "",
+    matricula: "", curp: "", fecha_nacimiento: "", carrera_id: "", semestre_actual: "1", sexo: "", grupo_id: "",
     // Maestro
     rfc: "", especialidad: "", tipo_contrato: "horas",
     // Padres
@@ -75,12 +76,21 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingEmail, setPendingEmail] = useState("");
   const [carreras, setCarreras] = useState<Carrera[]>([]);
+  const [grupos,   setGrupos]   = useState<Grupo[]>([]);
 
   useEffect(() => {
     fetch("/api/carreras")
       .then((r) => r.json())
       .then((d) => setCarreras(d.carreras ?? []));
   }, []);
+
+  useEffect(() => {
+    if (form.rol !== "Alumno" || !form.carrera_id) { setGrupos([]); return; }
+    fetch(`/api/grupos?carrera_id=${form.carrera_id}&semestre=${form.semestre_actual}`)
+      .then((r) => r.json())
+      .then((d) => { setGrupos(d.grupos ?? []); set("grupo_id", ""); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.carrera_id, form.semestre_actual, form.rol]);
 
   const pw = form.pw;
   const checks = checkPw(pw);
@@ -138,6 +148,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
           carrera_id:       form.carrera_id || undefined,
           semestre_actual:  form.semestre_actual ? parseInt(form.semestre_actual) : 1,
           sexo:             form.sexo || undefined,
+          grupo_id:         form.grupo_id || undefined,
           // Maestro
           rfc:              form.rfc || undefined,
           especialidad:     form.especialidad || undefined,
@@ -273,6 +284,18 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
                   </select>
                 </div>
               </div>
+              {form.carrera_id && (
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Grupo <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
+                {grupos.length === 0
+                  ? <p className="text-xs text-on-surface-variant italic">No hay grupos disponibles para esta carrera y semestre.</p>
+                  : <select value={form.grupo_id} onChange={(e) => set("grupo_id", e.target.value)} className={`${inputBase} ${inputOk}`}>
+                      <option value="">Sin asignar</option>
+                      {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre} — {g.turno}</option>)}
+                    </select>
+                }
+              </div>
+              )}
             </>)}
 
             {/* ── Campos específicos de Maestro ── */}
@@ -516,13 +539,63 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState({ apellido_paterno: usuario.apellido_paterno, apellido_materno: usuario.apellido_materno ?? "", nombre: usuario.nombre, rol: usuario.rol, activo: usuario.activo });
+  const [form, setForm] = useState({
+    apellido_paterno: usuario.apellido_paterno,
+    apellido_materno: usuario.apellido_materno ?? "",
+    nombre: usuario.nombre,
+    rol: usuario.rol,
+    activo: usuario.activo,
+    // Alumno
+    matricula: "", curp: "", carrera_id: "", semestre_actual: "1", sexo: "",
+    // Maestro
+    rfc: "", especialidad: "", tipo_contrato: "horas",
+    // Padres
+    curp_tutor: "", parentesco: "tutor_legal",
+  });
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
+  const [carreras, setCarreras] = useState<Carrera[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/admin/usuarios/${usuario.id}`).then(r => r.json()),
+      fetch("/api/carreras").then(r => r.json()),
+    ]).then(([ud, cd]) => {
+      setCarreras(cd.carreras ?? []);
+      if (ud.alumno) {
+        setForm(f => ({
+          ...f,
+          matricula:      ud.alumno.matricula       ?? "",
+          curp:           ud.alumno.curp            ?? "",
+          carrera_id:     ud.alumno.carrera_id      ?? "",
+          semestre_actual: String(ud.alumno.semestre_actual ?? 1),
+          sexo:           ud.alumno.sexo            ?? "",
+        }));
+      }
+      if (ud.maestro) {
+        setForm(f => ({
+          ...f,
+          rfc:            ud.maestro.rfc            ?? "",
+          especialidad:   ud.maestro.especialidad   ?? "",
+          tipo_contrato:  ud.maestro.tipo_contrato  ?? "horas",
+        }));
+      }
+      if (ud.padre) {
+        setForm(f => ({
+          ...f,
+          curp_tutor: ud.padre.curp        ?? "",
+          parentesco: ud.padre.parentesco  ?? "tutor_legal",
+        }));
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [usuario.id]);
 
   function set(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
   }
+
   async function handleSave() {
     setSaving(true);
     setApiError("");
@@ -530,7 +603,26 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
       const res = await fetch(`/api/admin/usuarios/${usuario.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno || null, nombre: form.nombre, rol: form.rol, activo: form.activo }),
+        body: JSON.stringify({
+          apellido_paterno: form.apellido_paterno,
+          apellido_materno: form.apellido_materno || null,
+          nombre: form.nombre,
+          rol: form.rol,
+          activo: form.activo,
+          // Alumno
+          matricula:       form.matricula       || undefined,
+          curp:            form.curp            || undefined,
+          carrera_id:      form.carrera_id      || undefined,
+          semestre_actual: form.semestre_actual ? parseInt(form.semestre_actual) : undefined,
+          sexo:            form.sexo            || undefined,
+          // Maestro
+          rfc:             form.rfc             || undefined,
+          especialidad:    form.especialidad    || undefined,
+          tipo_contrato:   form.tipo_contrato   || undefined,
+          // Padres
+          curp_tutor:      form.curp_tutor      || undefined,
+          parentesco:      form.parentesco      || undefined,
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -552,53 +644,162 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-outline-variant overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
           <h2 className="font-semibold text-on-surface text-base">Editar usuario</h2>
           <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
           </button>
         </div>
-        <div className="px-6 py-5 flex flex-col gap-4">
-          <div>
-            <label className={labelBase}>Apellido Paterno</label>
-            <input value={form.apellido_paterno} onChange={(e) => set("apellido_paterno", e.target.value)} className={inputBase} />
-          </div>
-          <div>
-            <label className={labelBase}>Apellido Materno <span className="font-normal normal-case">(opcional)</span></label>
-            <input value={form.apellido_materno} onChange={(e) => set("apellido_materno", e.target.value)} className={inputBase} />
-          </div>
-          <div>
-            <label className={labelBase}>Nombre(s)</label>
-            <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className={inputBase} />
-          </div>
-          <div>
-            <label className={labelBase}>Correo electrónico</label>
-            <input type="email" value={usuario.correo} disabled className={`${inputBase} opacity-60 cursor-not-allowed`} />
-            <p className="text-xs text-on-surface-variant mt-1">El correo no se puede cambiar desde aquí.</p>
-          </div>
-          <div>
-            <label className={labelBase}>Rol</label>
-            <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={inputBase}>
-              <option value="alumno">Alumno</option>
-              <option value="maestro">Maestro</option>
-              <option value="admin">Admin</option>
-              <option value="padres">Padres</option>
-            </select>
-          </div>
-          {apiError && <p className="text-xs text-red-600">{apiError}</p>}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div
-              onClick={() => set("activo", !form.activo)}
-              className={`relative w-9 h-5 rounded-full transition-colors ${form.activo ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"}`}
-            >
-              <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.activo ? "translate-x-4" : "translate-x-0"}`} />
-            </div>
-            <span className="text-sm text-on-surface-variant">Cuenta activa</span>
-          </label>
+
+        {/* Advertencia */}
+        <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 px-5 py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          <p className="text-xs text-amber-800 dark:text-amber-200">
+            <span className="font-semibold">Verifica los datos antes de guardar.</span>{" "}
+            Los cambios en matrícula o CURP afectan directamente el acceso del alumno al sistema.
+          </p>
         </div>
-        <div className="px-6 pb-5 flex gap-3">
+
+        {loading ? (
+          <div className="px-6 py-10 flex items-center justify-center text-on-surface-variant text-sm">
+            Cargando datos…
+          </div>
+        ) : (
+          <div className="px-6 py-5 flex flex-col gap-4 max-h-[65vh] overflow-y-auto">
+            {/* Nombres */}
+            <div>
+              <label className={labelBase}>Apellido Paterno</label>
+              <input value={form.apellido_paterno} onChange={(e) => set("apellido_paterno", e.target.value)} className={inputBase} />
+            </div>
+            <div>
+              <label className={labelBase}>Apellido Materno <span className="font-normal normal-case">(opcional)</span></label>
+              <input value={form.apellido_materno} onChange={(e) => set("apellido_materno", e.target.value)} className={inputBase} />
+            </div>
+            <div>
+              <label className={labelBase}>Nombre(s)</label>
+              <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className={inputBase} />
+            </div>
+            {/* Correo (solo lectura) */}
+            <div>
+              <label className={labelBase}>Correo electrónico</label>
+              <input type="email" value={usuario.correo} disabled className={`${inputBase} opacity-60 cursor-not-allowed`} />
+              <p className="text-xs text-on-surface-variant mt-1">El correo no se puede cambiar desde aquí.</p>
+            </div>
+            {/* Rol */}
+            <div>
+              <label className={labelBase}>Rol</label>
+              <select value={form.rol} onChange={(e) => set("rol", e.target.value)} className={inputBase}>
+                <option value="alumno">Alumno</option>
+                <option value="maestro">Maestro</option>
+                <option value="admin">Admin</option>
+                <option value="padres">Padres</option>
+              </select>
+            </div>
+
+            {/* ── Campos Alumno ── */}
+            {form.rol === "alumno" && (<>
+              <hr className="border-outline-variant" />
+              <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide -mb-1">Datos del alumno</p>
+              <div>
+                <label className={labelBase}>Matrícula</label>
+                <input value={form.matricula} onChange={(e) => set("matricula", e.target.value)} placeholder="Ej. 2024001" maxLength={20} className={inputBase} />
+              </div>
+              <div>
+                <label className={labelBase}>CURP</label>
+                <input value={form.curp} onChange={(e) => set("curp", e.target.value.toUpperCase())} placeholder="18 caracteres" maxLength={18} className={`${inputBase} font-mono text-xs`} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelBase}>Carrera</label>
+                  <select value={form.carrera_id} onChange={(e) => set("carrera_id", e.target.value)} className={inputBase}>
+                    <option value="">Sin asignar</option>
+                    {carreras.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelBase}>Semestre</label>
+                  <select value={form.semestre_actual} onChange={(e) => set("semestre_actual", e.target.value)} className={inputBase}>
+                    {[1,2,3,4,5,6].map(s => <option key={s} value={s}>{s}°</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={labelBase}>Sexo <span className="font-normal normal-case">(opcional)</span></label>
+                <select value={form.sexo} onChange={(e) => set("sexo", e.target.value)} className={inputBase}>
+                  <option value="">Sin especificar</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                  <option value="NB">No binario</option>
+                </select>
+              </div>
+            </>)}
+
+            {/* ── Campos Maestro ── */}
+            {form.rol === "maestro" && (<>
+              <hr className="border-outline-variant" />
+              <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide -mb-1">Datos del maestro</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelBase}>RFC <span className="font-normal normal-case">(opcional)</span></label>
+                  <input value={form.rfc} onChange={(e) => set("rfc", e.target.value.toUpperCase())} placeholder="13 caracteres" maxLength={13} className={`${inputBase} font-mono text-xs`} />
+                </div>
+                <div>
+                  <label className={labelBase}>Tipo de Contrato</label>
+                  <select value={form.tipo_contrato} onChange={(e) => set("tipo_contrato", e.target.value)} className={inputBase}>
+                    <option value="horas">Por Horas</option>
+                    <option value="base">Base</option>
+                    <option value="interino">Interino</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={labelBase}>Especialidad <span className="font-normal normal-case">(opcional)</span></label>
+                <input value={form.especialidad} onChange={(e) => set("especialidad", e.target.value)} placeholder="Ej. Informática, Matemáticas" maxLength={100} className={inputBase} />
+              </div>
+            </>)}
+
+            {/* ── Campos Padres ── */}
+            {form.rol === "padres" && (<>
+              <hr className="border-outline-variant" />
+              <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide -mb-1">Datos del tutor</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelBase}>CURP <span className="font-normal normal-case">(opcional)</span></label>
+                  <input value={form.curp_tutor} onChange={(e) => set("curp_tutor", e.target.value.toUpperCase())} placeholder="18 caracteres" maxLength={18} className={`${inputBase} font-mono text-xs`} />
+                </div>
+                <div>
+                  <label className={labelBase}>Parentesco</label>
+                  <select value={form.parentesco} onChange={(e) => set("parentesco", e.target.value)} className={inputBase}>
+                    <option value="tutor_legal">Tutor Legal</option>
+                    <option value="padre">Padre</option>
+                    <option value="madre">Madre</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+            </>)}
+
+            {apiError && <p className="text-xs text-red-600">{apiError}</p>}
+
+            {/* Toggle activo */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                onClick={() => set("activo", !form.activo)}
+                className={`relative w-9 h-5 rounded-full transition-colors ${form.activo ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"}`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.activo ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <span className="text-sm text-on-surface-variant">Cuenta activa</span>
+            </label>
+          </div>
+        )}
+
+        <div className="px-6 pb-5 pt-3 flex gap-3 border-t border-outline-variant">
           <button onClick={onClose} disabled={saving} className="flex-1 py-2 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">Cancelar</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">{saving ? "Guardando…" : "Guardar cambios"}</button>
+          <button onClick={handleSave} disabled={saving || loading} className="flex-1 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">{saving ? "Guardando…" : "Guardar cambios"}</button>
         </div>
       </div>
     </div>

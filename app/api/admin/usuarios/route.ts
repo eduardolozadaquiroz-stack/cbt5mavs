@@ -152,6 +152,12 @@ export async function POST(request: NextRequest) {
       console.error("[usuarios POST] alumnos insert error:", alumnoError.code, alumnoError.message);
       return NextResponse.json({ error: msg }, { status: 500 });
     }
+
+    // Asignar grupo si se proporcionó
+    const grupo_id = typeof body.grupo_id === "string" ? body.grupo_id.trim() : "";
+    if (grupo_id) {
+      await admin.from("alumno_grupo").insert({ alumno_id: dbUser.id, grupo_id, activo: true });
+    }
   }
 
   // Si es maestro, crear registro en tabla maestros
