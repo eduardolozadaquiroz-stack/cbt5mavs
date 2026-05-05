@@ -6,6 +6,7 @@ import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
+import ReinscripcionCard from "@/components/dashboard/ReinscripcionCard";
 
 interface StudentData {
   studentId: string;      // UUID interno (para llamadas a API)
@@ -183,6 +184,8 @@ export default function PadresDashboard() {
               Cambiar Estudiante
             </button>
           </div>
+
+          <ReinscripcionCard />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-lg mb-xl">
 

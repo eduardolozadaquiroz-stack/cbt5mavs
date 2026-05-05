@@ -5,6 +5,7 @@ import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
+import ReinscripcionCard from "@/components/dashboard/ReinscripcionCard";
 
 interface Calificacion {
   id: string;
@@ -107,6 +108,8 @@ export default function DashboardAlumnoPage() {
               <p className="font-body-base text-body-base text-on-surface-variant">Resumen académico y avisos institucionales.</p>
             </div>
           </div>
+
+          <ReinscripcionCard />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-lg">
 
