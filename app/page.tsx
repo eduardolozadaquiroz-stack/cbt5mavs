@@ -5,6 +5,7 @@ import MetricsSection from "@/components/sections/MetricsSection";
 import CareersSection from "@/components/sections/CareersSection";
 import CTASection from "@/components/sections/CTASection";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import ReinscripcionBanner from "@/components/sections/ReinscripcionBanner";
 
 export default function InicioPage() {
   return (
@@ -13,6 +14,7 @@ export default function InicioPage() {
       <Navbar activePage="inicio" />
       <main className="flex-grow">
         <HeroSection />
+        <ReinscripcionBanner />
         <MetricsSection />
         <CareersSection />
         <CTASection />

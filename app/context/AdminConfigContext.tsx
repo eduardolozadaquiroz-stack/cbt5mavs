@@ -122,6 +122,17 @@ export interface AdmisionConfig {
   habilitada: boolean;
 }
 
+export interface ReinscripcionConfig {
+  habilitada: boolean;
+  fechaInicio: string;
+  fechaCierre: string;
+  cicloEscolar: string;
+  costoReinscripcion: number;
+  documentosRequeridos: string;
+  linkFormatos: string;
+  avisoImportante: string;
+}
+
 export interface Aviso {
   id: number;
   titulo: string;
@@ -155,6 +166,7 @@ export interface AdminConfig {
   carreras: CarrerasConfig;
   nosotros: NosotrosConfig;
   admision: AdmisionConfig;
+  reinscripcion: ReinscripcionConfig;
   contacto: ContactoConfig;
   siteConfig: SiteConfig;
   avisos: Aviso[];
@@ -168,6 +180,7 @@ interface AdminConfigContextType {
   updateCarreras: (data: Partial<CarrerasConfig>) => void;
   updateNosotros: (data: Partial<NosotrosConfig>) => void;
   updateAdmision: (data: Partial<AdmisionConfig>) => void;
+  updateReinscripcion: (data: Partial<ReinscripcionConfig>) => void;
   updateContacto: (data: Partial<ContactoConfig>) => void;
   updateSiteConfig: (data: Partial<SiteConfig>) => void;
   addAviso: (aviso: Aviso) => void;
@@ -317,6 +330,16 @@ const DEFAULT_CONFIG: AdminConfig = {
     avisoImportante: "Las fechas pueden cambiar según necesidad",
     habilitada: true,
   },
+  reinscripcion: {
+    habilitada: false,
+    fechaInicio: "",
+    fechaCierre: "",
+    cicloEscolar: "2025-2026",
+    costoReinscripcion: 0,
+    documentosRequeridos: "Boleta de calificaciones, Credencial escolar",
+    linkFormatos: "",
+    avisoImportante: "",
+  },
   contacto: {
     email: "contacto@cbt5chalco.edu.mx",
     telefono: "+52 (55) 5124 0355",
@@ -403,6 +426,7 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
           DEFAULT_CONFIG.nosotros.historiaEventos,
       },
       admision: { ...DEFAULT_CONFIG.admision, ...(parsed.admision ?? {}) },
+      reinscripcion: { ...DEFAULT_CONFIG.reinscripcion, ...(parsed.reinscripcion ?? {}) },
       contacto: {
         ...DEFAULT_CONFIG.contacto,
         ...(parsed.contacto ?? {}),
@@ -506,6 +530,14 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateReinscripcion = (data: Partial<ReinscripcionConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      reinscripcion: { ...prev.reinscripcion, ...data },
+      ultimaActualizacion: new Date().toISOString(),
+    }));
+  };
+
   const updateContacto = (data: Partial<ContactoConfig>) => {
     setConfig((prev) => ({
       ...prev,
@@ -583,6 +615,7 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
         updateCarreras,
         updateNosotros,
         updateAdmision,
+        updateReinscripcion,
         updateContacto,
         updateSiteConfig,
         addAviso,
