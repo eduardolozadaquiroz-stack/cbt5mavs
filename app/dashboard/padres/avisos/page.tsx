@@ -12,7 +12,7 @@ interface Aviso {
   cuerpo: string;
   tipo: string;
   activo: boolean;
-  imagen_url: string | null;
+  fotos: string[];
   fecha_publicacion: string | null;
 }
 
@@ -144,9 +144,19 @@ export default function PadresAvisosPage() {
             <div className="flex flex-col gap-md">
               {lista.map((a) => (
                 <div key={a.id} className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-                  {a.imagen_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.imagen_url} alt={a.titulo} className="w-full h-40 object-cover" />
+                  {a.fotos.length > 0 && (
+                    <div style={{ aspectRatio: "16/9" }} className="overflow-hidden bg-slate-100 dark:bg-slate-800">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={a.fotos[0]} alt={a.titulo} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  {a.fotos.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto px-md pt-2">
+                      {a.fotos.slice(1).map((url, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={url} alt="" className="h-14 w-14 rounded-lg object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700" />
+                      ))}
+                    </div>
                   )}
                   <div className="p-md">
                     <div className="flex flex-wrap items-center gap-2 mb-2">

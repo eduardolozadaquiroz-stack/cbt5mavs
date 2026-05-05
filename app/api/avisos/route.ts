@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     tipo: a.tipo,
     firmado: null as string | null,
     activo: a.estado === "publicado",
-    imagen_url: (a.fotos as string[])?.[0] ?? null,
+    fotos: (a.fotos as string[]) ?? [],
     fecha_publicacion: a.fecha_publicacion,
     destinatario: (a.destinatario as string) ?? "Todos",
     autor_id: a.autor_id,
@@ -71,11 +71,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const titulo     = sanitize(body.titulo as string, 200);
-  const cuerpo     = sanitize(body.cuerpo as string, 4000);
-  const tipo       = sanitize(body.tipo as string, 50).toLowerCase();
-  const imagen_url = sanitize(body.imagen_url as string, 500);
-  const activoRaw  = body.activo !== false; // default true
+  const titulo    = sanitize(body.titulo as string, 200);
+  const cuerpo    = sanitize(body.cuerpo as string, 4000);
+  const tipo      = sanitize(body.tipo as string, 50).toLowerCase();
+  const activoRaw = body.activo !== false; // default true
+
+  // Aceptar fotos como array de URLs (máx. 5)
+  const fotosRaw = Array.isArray(body.fotos) ? (body.fotos as unknown[]) : [];
+  const fotosArr = fotosRaw
+    .filter((u): u is string => typeof u === "string")
+    .map((u) => sanitize(u, 500))
+    .filter((u) => isSafeImageUrl(u))
+    .slice(0, 5);
   const VALID_DEST = ["Todos", "Alumnos", "Maestros", "Padres"];
   const destinatario = VALID_DEST.includes(body.destinatario as string)
     ? (body.destinatario as string)
@@ -83,11 +90,6 @@ export async function POST(request: NextRequest) {
 
   if (!titulo || !cuerpo || !tipo) {
     return NextResponse.json({ error: "titulo, cuerpo y tipo son requeridos" }, { status: 400 });
-  }
-
-  // A03 – Prevenir XSS via URL de imagen almacenada
-  if (imagen_url && !isSafeImageUrl(imagen_url)) {
-    return NextResponse.json({ error: "imagen_url debe ser una URL HTTPS de Supabase Storage" }, { status: 400 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
       contenido: cuerpo,
       tipo,
       destinatario,
-      fotos: imagen_url ? [imagen_url] : [],
+      fotos: fotosArr,
       autor_id: user.db_id,
       estado: activoRaw ? "publicado" : "borrador",
       fecha_publicacion: activoRaw ? new Date().toISOString() : null,

@@ -8,11 +8,38 @@ export interface Aviso {
   titulo: string;
   cuerpo: string;
   tipo: string;
-  imagen_url: string | null;
+  fotos: string[];
   fecha_publicacion: string | null;
   activo: boolean;
   autor_id: string | null;
   destinatario: string;
+}
+
+// Tipo del row crudo que devuelve Supabase Realtime (columnas DB)
+interface DbRow {
+  id: string;
+  titulo: string;
+  contenido: string;
+  tipo: string;
+  estado: string;
+  fotos: string[];
+  fecha_publicacion: string | null;
+  destinatario: string;
+  autor_id: string | null;
+}
+
+function mapDbRow(row: DbRow): Aviso {
+  return {
+    id: row.id,
+    titulo: row.titulo,
+    cuerpo: row.contenido,
+    tipo: row.tipo,
+    fotos: row.fotos ?? [],
+    activo: row.estado === "publicado",
+    fecha_publicacion: row.fecha_publicacion,
+    destinatario: row.destinatario ?? "Todos",
+    autor_id: row.autor_id,
+  };
 }
 
 export function useRealtimeAvisos(para?: "alumnos" | "maestros" | "padres") {
@@ -45,16 +72,16 @@ export function useRealtimeAvisos(para?: "alumnos" | "maestros" | "padres") {
         { event: "*", schema: "public", table: "avisos" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            const newRow = payload.new as Aviso;
-            if (newRow.activo) {
-              setAvisos((prev) => [newRow, ...prev]);
+            const mapped = mapDbRow(payload.new as DbRow);
+            if (mapped.activo) {
+              setAvisos((prev) => [mapped, ...prev]);
             }
           } else if (payload.eventType === "UPDATE") {
-            const updated = payload.new as Aviso;
+            const mapped = mapDbRow(payload.new as DbRow);
             setAvisos((prev) =>
-              updated.activo
-                ? prev.map((a) => (a.id === updated.id ? updated : a))
-                : prev.filter((a) => a.id !== updated.id)
+              mapped.activo
+                ? prev.map((a) => (a.id === mapped.id ? mapped : a))
+                : prev.filter((a) => a.id !== mapped.id)
             );
           } else if (payload.eventType === "DELETE") {
             const deleted = payload.old as Partial<Aviso>;

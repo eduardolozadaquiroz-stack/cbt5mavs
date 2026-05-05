@@ -95,9 +95,21 @@ export default function AvisosInternoPage() {
                     {aviso.cuerpo}
                   </p>
 
-                  {aviso.imagen_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={aviso.imagen_url} alt={aviso.titulo} className="rounded-lg max-h-64 object-cover w-full" />
+                  {aviso.fotos.length > 0 && (
+                    <div>
+                      <div style={{ aspectRatio: "16/9" }} className="rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={aviso.fotos[0]} alt={aviso.titulo} className="w-full h-full object-cover" />
+                      </div>
+                      {aviso.fotos.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto mt-2">
+                          {aviso.fotos.slice(1).map((url, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img key={i} src={url} alt="" className="h-16 w-16 rounded-lg object-cover flex-shrink-0 border border-outline-variant" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </article>

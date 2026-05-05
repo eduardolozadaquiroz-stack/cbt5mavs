@@ -66,7 +66,7 @@ interface Aviso {
   firmado: string | null;
   fecha_publicacion: string | null;
   activo: boolean;
-  imagen_url: string | null;
+  fotos: string[];
   destinatario: string;
 }
 
@@ -107,7 +107,7 @@ function ModalAviso({
     tipo:         aviso?.tipo         ?? ("institucional" as Tipo),
     firmado:      aviso?.firmado      ?? "",
     activo:       aviso?.activo       ?? true,
-    imagen_url:   aviso?.imagen_url   ?? "",
+    fotos:        aviso?.fotos        ?? ([] as string[]),
     destinatario: aviso?.destinatario ?? "Todos",
   });
   const [uploading, setUploading] = useState(false);
@@ -145,19 +145,30 @@ function ModalAviso({
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = 5 - form.fotos.length;
+    if (remaining <= 0) return;
     setUploading(true);
     setErr("");
     try {
-      const url = await uploadFoto(file);
-      set("imagen_url", url);
+      const toUpload = Array.from(files).slice(0, remaining);
+      const urls: string[] = [];
+      for (const file of toUpload) {
+        const url = await uploadFoto(file);
+        urls.push(url);
+      }
+      setForm((f) => ({ ...f, fotos: [...f.fotos, ...urls] }));
     } catch (uploadErr) {
       setErr(uploadErr instanceof Error ? uploadErr.message : "No se pudo subir la imagen.");
     } finally {
       setUploading(false);
       e.target.value = "";
     }
+  }
+
+  function removePhoto(idx: number) {
+    setForm((f) => ({ ...f, fotos: f.fotos.filter((_, i) => i !== idx) }));
   }
 
   async function handleSave() {
@@ -174,7 +185,7 @@ function ModalAviso({
         tipo:         form.tipo,
         firmado:      form.firmado.trim() || null,
         activo:       form.activo,
-        imagen_url:   form.imagen_url.trim() || null,
+        fotos:        form.fotos,
         destinatario: form.destinatario,
       };
       const url  = isEdit ? `/api/avisos/${aviso!.id}` : "/api/avisos";
@@ -299,43 +310,45 @@ function ModalAviso({
             </div>
           </div>
 
-          {/* Imagen */}
+          {/* Imágenes (máx. 5) */}
           <div>
             <label className={labelBase}>
-              Imagen{" "}
-              <span className="normal-case font-normal text-slate-400">(opcional)</span>
+              Imágenes{" "}
+              <span className="normal-case font-normal text-slate-400">(opcional · máx. 5)</span>
             </label>
-            {form.imagen_url && (
-              <div className="mb-2 relative rounded-lg overflow-hidden h-36 bg-slate-100 dark:bg-slate-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.imagen_url} alt="preview" className="w-full h-full object-cover" />
+            <div className="grid grid-cols-4 gap-2">
+              {form.fotos.map((url, i) => (
+                <div key={i} className="relative rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800" style={{ aspectRatio: "1/1" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Imagen ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow transition-colors"
+                  >×</button>
+                  {i === 0 && (
+                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1 rounded leading-tight">Portada</span>
+                  )}
+                </div>
+              ))}
+              {form.fotos.length < 5 && (
                 <button
                   type="button"
-                  onClick={() => set("imagen_url", "")}
-                  className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                  className="rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 transition-colors disabled:opacity-50"
+                  style={{ aspectRatio: "1/1" }}
                 >
-                  ×
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>
+                  </svg>
+                  <span className="text-[10px] font-medium">
+                    {uploading ? "..." : `${form.fotos.length}/5`}
+                  </span>
                 </button>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={form.imagen_url}
-                onChange={(e) => set("imagen_url", e.target.value)}
-                placeholder="URL de imagen o sube desde tu dispositivo"
-                className={inputBase}
-              />
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => fileRef.current?.click()}
-                className="flex-shrink-0 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 whitespace-nowrap"
-              >
-                {uploading ? "Subiendo..." : "📁 Subir"}
-              </button>
+              )}
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFile} />
           </div>
 
           {err && <p className="text-xs text-red-600 dark:text-red-400">{err}</p>}
@@ -608,9 +621,9 @@ export default function AvisosAdminPage() {
                 <div className="py-12 text-center text-sm text-slate-400">No se encontraron avisos con los filtros actuales.</div>
               ) : filtrados.map((a) => (
                 <div key={a.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  {a.imagen_url && (
+                  {a.fotos[0] && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.imagen_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700" />
+                    <img src={a.fotos[0]} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">

@@ -12,6 +12,7 @@ interface Aviso {
   estado: string;
   fecha_publicacion: string | null;
   autor_id: string | null;
+  fotos: string[];
 }
 
 const TIPO_STYLE: Record<string, string> = {
@@ -84,6 +85,20 @@ export default function AvisosMaestroPage() {
               <div className="flex flex-col gap-md">
                 {avisosFiltrados.map((aviso) => (
                   <div key={aviso.id} className="bg-white border border-outline-variant rounded-lg shadow-sm overflow-hidden">
+                    {aviso.fotos && aviso.fotos.length > 0 && (
+                      <div style={{ aspectRatio: "16/9" }} className="overflow-hidden bg-slate-100">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={aviso.fotos[0]} alt={aviso.titulo} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    {aviso.fotos && aviso.fotos.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto px-md pt-2">
+                        {aviso.fotos.slice(1).map((url: string, i: number) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={i} src={url} alt="" className="h-14 w-14 rounded-lg object-cover flex-shrink-0 border border-slate-200" />
+                        ))}
+                      </div>
+                    )}
                     <div className="p-md">
                       <div className="flex items-start justify-between gap-4 mb-sm">
                         <div className="flex items-center gap-2 flex-wrap">

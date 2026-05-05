@@ -7,7 +7,7 @@ interface Aviso {
   titulo: string;
   cuerpo: string;
   tipo: string;
-  imagen_url: string | null;
+  fotos: string[];
   fecha_publicacion: string | null;
 }
 
@@ -81,40 +81,45 @@ export default function AvisosGrid() {
         {avisos.map((aviso) => (
           <article
             key={aviso.id}
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-shadow duration-200 overflow-hidden flex flex-col h-full cursor-pointer group"
+            className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full cursor-pointer group"
             onClick={() => setSelected(aviso)}
           >
-            {aviso.imagen_url && (
-              <div className="h-48 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
+            {aviso.fotos.length > 0 && (
+              <div className="relative overflow-hidden bg-slate-200 dark:bg-slate-700" style={{ aspectRatio: "16/9" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={aviso.titulo}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  src={aviso.imagen_url}
+                  src={aviso.fotos[0]}
                 />
-                <div className="absolute top-4 left-4">
-                  <span className={`${TIPO_COLORS[aviso.tipo] ?? "bg-slate-600"} text-white px-3 py-1 rounded-full font-label-bold text-label-bold flex items-center gap-1 shadow-sm text-xs`}>
+                <div className="absolute top-3 left-3">
+                  <span className={`${TIPO_COLORS[aviso.tipo] ?? "bg-slate-600"} text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-sm`}>
                     {TIPO_LABEL[aviso.tipo] ?? aviso.tipo}
                   </span>
                 </div>
+                {aviso.fotos.length > 1 && (
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                    +{aviso.fotos.length - 1}
+                  </div>
+                )}
               </div>
             )}
 
-            <div className={`p-6 flex flex-col flex-grow ${!aviso.imagen_url ? "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800" : ""}`}>
-              <div className="flex justify-between items-start mb-3">
-                {!aviso.imagen_url && (
-                  <span className={`${TIPO_COLORS[aviso.tipo] ?? "bg-slate-600"} text-white px-3 py-1 rounded-full font-label-bold text-label-bold flex items-center gap-1 shadow-sm text-xs`}>
+            <div className={`p-5 flex flex-col flex-grow ${aviso.fotos.length === 0 ? "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800" : ""}`}>
+              <div className="flex justify-between items-start mb-2 gap-2">
+                {aviso.fotos.length === 0 && (
+                  <span className={`${TIPO_COLORS[aviso.tipo] ?? "bg-slate-600"} text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-sm`}>
                     {TIPO_LABEL[aviso.tipo] ?? aviso.tipo}
                   </span>
                 )}
                 {formatFecha(aviso.fecha_publicacion) && (
-                  <div className="flex items-center text-on-surface-variant font-body-sm text-body-sm gap-2 ml-auto">
-                    <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+                  <div className="flex items-center text-on-surface-variant font-body-sm text-body-sm gap-1 ml-auto text-xs">
+                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
                     <time dateTime={aviso.fecha_publicacion ?? ""}>{formatFecha(aviso.fecha_publicacion)}</time>
                   </div>
                 )}
               </div>
-              <h2 className="font-title-sm text-title-sm text-on-background mb-3">{aviso.titulo}</h2>
+              <h2 className="font-title-sm text-title-sm text-on-background mb-2">{aviso.titulo}</h2>
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-4 flex-grow line-clamp-3">{aviso.cuerpo}</p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:underline mt-auto">
                 Leer más
@@ -135,10 +140,21 @@ export default function AvisosGrid() {
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {selected.imagen_url && (
-              <div className="h-56 overflow-hidden rounded-t-2xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selected.imagen_url} alt={selected.titulo} className="w-full h-full object-cover" />
+            {/* Imagen principal + galeria */}
+            {selected.fotos.length > 0 && (
+              <div>
+                <div className="overflow-hidden rounded-t-2xl bg-slate-100 dark:bg-slate-800" style={{ aspectRatio: "16/9" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selected.fotos[0]} alt={selected.titulo} className="w-full h-full object-cover" />
+                </div>
+                {selected.fotos.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto px-4 py-3 bg-slate-50 dark:bg-slate-800/60">
+                    {selected.fotos.slice(1).map((url, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={url} alt="" className="h-16 w-16 rounded-lg object-cover flex-shrink-0 border-2 border-slate-200 dark:border-slate-700 hover:border-primary transition-colors" />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             <div className="p-6">
