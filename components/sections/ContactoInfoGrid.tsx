@@ -1,4 +1,11 @@
+"use client";
+
+import { useAdminConfig } from "@/app/context/AdminConfigContext";
+
 export default function ContactoInfoGrid() {
+  const { config } = useAdminConfig();
+  const c = config.contacto;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
 
@@ -14,8 +21,7 @@ export default function ContactoInfoGrid() {
         </div>
         <div className="flex flex-col">
           <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mb-1">Dirección</span>
-          <span className="font-body-base text-body-base text-on-surface">Rio La Compañía Mz. 79-Lt. 1, Sección VI</span>
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Conjunto Hab. Los Héroes Chalco, 56644 Chalco de Díaz Covarrubias, Méx.</span>
+          <span className="font-body-base text-body-base text-on-surface">{c.direccion}</span>
         </div>
       </div>
 
@@ -31,8 +37,10 @@ export default function ContactoInfoGrid() {
         </div>
         <div className="flex flex-col">
           <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mb-1">Teléfono Institucional</span>
-          <a href="tel:+525551240355" className="font-body-base text-body-base text-on-surface hover:text-primary transition-colors">+52 (55) 5124 0355</a>
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Lunes a Viernes en horario escolar</span>
+          <a href={`tel:${c.telefono.replace(/\s|\(|\)|-/g, "")}`} className="font-body-base text-body-base text-on-surface hover:text-primary transition-colors">{c.telefono}</a>
+          {c.telefono2 && (
+            <a href={`tel:${c.telefono2.replace(/\s|\(|\)|-/g, "")}`} className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors">{c.telefono2}</a>
+          )}
         </div>
       </div>
 
@@ -48,7 +56,7 @@ export default function ContactoInfoGrid() {
         </div>
         <div className="flex flex-col">
           <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mb-1">Correo Electrónico</span>
-          <span className="font-body-base text-body-base text-on-surface">contacto@cbt5chalco.edu.mx</span>
+          <a href={`mailto:${c.email}`} className="font-body-base text-body-base text-on-surface hover:text-primary transition-colors">{c.email}</a>
           <span className="font-body-sm text-body-sm text-on-surface-variant">Respuesta en 24-48 hrs</span>
         </div>
       </div>
@@ -65,11 +73,12 @@ export default function ContactoInfoGrid() {
         </div>
         <div className="flex flex-col">
           <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mb-1">Horarios de Turno</span>
-          <span className="font-body-base text-body-base text-on-surface">Matutino: 07:00 AM – 01:00 PM</span>
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Vespertino: 01:00 PM – 07:00 PM</span>
+          <span className="font-body-base text-body-base text-on-surface">Matutino: {c.horarioMatutino}</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">Vespertino: {c.horarioVespertino}</span>
         </div>
       </div>
 
     </div>
   );
 }
+

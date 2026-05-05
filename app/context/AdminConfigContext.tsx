@@ -92,6 +92,23 @@ export interface NosotrosConfig {
   reconocimientos: ReconocimientoConfig[];
 }
 
+// ─── Contacto ───────────────────────────────────────────────────────────────
+
+export interface ContactoConfig {
+  email: string;
+  telefono: string;
+  telefono2: string;
+  direccion: string;
+  horarioMatutino: string;
+  horarioVespertino: string;
+  mapaUrl: string;
+  redesSociales: {
+    facebook: string;
+    instagram: string;
+    whatsapp: string;
+  };
+}
+
 // ─── Admisión ───────────────────────────────────────────────────────────────
 
 export interface AdmisionConfig {
@@ -126,6 +143,7 @@ export interface AdminConfig {
   carreras: CarrerasConfig;
   nosotros: NosotrosConfig;
   admision: AdmisionConfig;
+  contacto: ContactoConfig;
   avisos: Aviso[];
   secciones: Record<string, SectionConfig>;
   ultimaActualizacion: string;
@@ -137,6 +155,7 @@ interface AdminConfigContextType {
   updateCarreras: (data: Partial<CarrerasConfig>) => void;
   updateNosotros: (data: Partial<NosotrosConfig>) => void;
   updateAdmision: (data: Partial<AdmisionConfig>) => void;
+  updateContacto: (data: Partial<ContactoConfig>) => void;
   addAviso: (aviso: Aviso) => void;
   updateAviso: (id: number, data: Partial<Aviso>) => void;
   deleteAviso: (id: number) => void;
@@ -284,6 +303,16 @@ const DEFAULT_CONFIG: AdminConfig = {
     avisoImportante: "Las fechas pueden cambiar según necesidad",
     habilitada: true,
   },
+  contacto: {
+    email: "contacto@cbt5chalco.edu.mx",
+    telefono: "+52 (55) 5124 0355",
+    telefono2: "",
+    direccion: "Rio La Compañía Mz. 79-Lt. 1, Sección VI, Conjunto Hab. Los Héroes Chalco, 56644 Chalco de Díaz Covarrubias, Méx.",
+    horarioMatutino: "07:00 AM – 01:00 PM",
+    horarioVespertino: "01:00 PM – 07:00 PM",
+    mapaUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6334.449767824081!2d-98.84201442904536!3d19.261204329788868!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce18ab560fc0b7%3A0xf18fa0c2df554486!2sCBT%20N%C3%BAmero%205%20Chalco!5e0!3m2!1ses!2smx!4v1777535021958!5m2!1ses!2smx",
+    redesSociales: { facebook: "", instagram: "", whatsapp: "" },
+  },
   avisos: [
     {
       id: 1,
@@ -349,6 +378,14 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
           DEFAULT_CONFIG.nosotros.historiaEventos,
       },
       admision: { ...DEFAULT_CONFIG.admision, ...(parsed.admision ?? {}) },
+      contacto: {
+        ...DEFAULT_CONFIG.contacto,
+        ...(parsed.contacto ?? {}),
+        redesSociales: {
+          ...DEFAULT_CONFIG.contacto.redesSociales,
+          ...(parsed.contacto?.redesSociales ?? {}),
+        },
+      },
       secciones: { ...DEFAULT_CONFIG.secciones, ...(parsed.secciones ?? {}) },
     };
   }
@@ -443,6 +480,21 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateContacto = (data: Partial<ContactoConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      contacto: {
+        ...prev.contacto,
+        ...data,
+        redesSociales: {
+          ...prev.contacto.redesSociales,
+          ...(data.redesSociales ?? {}),
+        },
+      },
+      ultimaActualizacion: new Date().toISOString(),
+    }));
+  };
+
   const addAviso = (aviso: Aviso) => {
     setConfig((prev) => ({
       ...prev,
@@ -497,6 +549,7 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
         updateCarreras,
         updateNosotros,
         updateAdmision,
+        updateContacto,
         addAviso,
         updateAviso,
         deleteAviso,
