@@ -55,7 +55,8 @@ const DOC_ESTADO_COLOR: Record<string, string> = {
 // Componente
 // ─────────────────────────────────────────────
 export default function ReinscripcionAlumnoPage() {
-  const { reinscripcion: reinConfig } = useAdminConfig();
+  const { config } = useAdminConfig();
+  const reinConfig = config.reinscripcion;
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [cicloEscolar, setCicloEscolar] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function ReinscripcionAlumnoPage() {
 
   // Documentos requeridos según la configuración
   const docsRequeridos: string[] = reinConfig?.documentosRequeridos
-    ? reinConfig.documentosRequeridos.split(",").map((d) => d.trim()).filter(Boolean)
+    ? reinConfig.documentosRequeridos.split(",").map((d: string) => d.trim()).filter(Boolean)
     : [];
 
   // ─── Fetch solicitud ────────────────────────
