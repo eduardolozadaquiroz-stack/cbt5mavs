@@ -17,6 +17,7 @@ const PROTECTED_API_ALWAYS = [
   /^\/api\/storage\/upload/,  // subida de archivos
   /^\/api\/auth\/logout/,     // logout requiere sesión
   /^\/api\/auth\/reset-password/, // cambio de contraseña
+  /^\/api\/reinscripcion\//,  // proceso de reinscripción del alumno
 ];
 
 // ── APIs públicas explícitas (allowlist) ─────────────────────────────────────

@@ -284,18 +284,21 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
                   </select>
                 </div>
               </div>
-              {form.carrera_id && (
               <div>
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1 block">Grupo <span className="text-on-surface-variant font-normal normal-case">(opcional)</span></label>
-                {grupos.length === 0
-                  ? <p className="text-xs text-on-surface-variant italic">No hay grupos disponibles para esta carrera y semestre.</p>
-                  : <select value={form.grupo_id} onChange={(e) => set("grupo_id", e.target.value)} className={`${inputBase} ${inputOk}`}>
-                      <option value="">Sin asignar</option>
-                      {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre} — {g.turno}</option>)}
-                    </select>
-                }
+                <select
+                  value={form.grupo_id}
+                  onChange={(e) => set("grupo_id", e.target.value)}
+                  disabled={!form.carrera_id}
+                  className={`${inputBase} ${inputOk} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <option value="">{!form.carrera_id ? "Primero selecciona una carrera" : "Sin asignar"}</option>
+                  {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre} — {g.turno}</option>)}
+                </select>
+                {form.carrera_id && grupos.length === 0 && (
+                  <p className="text-xs text-on-surface-variant italic mt-1">No hay grupos registrados para esta carrera y semestre.</p>
+                )}
               </div>
-              )}
             </>)}
 
             {/* ── Campos específicos de Maestro ── */}
@@ -546,7 +549,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
     rol: usuario.rol,
     activo: usuario.activo,
     // Alumno
-    matricula: "", curp: "", carrera_id: "", semestre_actual: "1", sexo: "",
+    matricula: "", curp: "", carrera_id: "", semestre_actual: "1", sexo: "", grupo_id: "",
     // Maestro
     rfc: "", especialidad: "", tipo_contrato: "horas",
     // Padres
@@ -556,6 +559,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
   const [carreras, setCarreras] = useState<Carrera[]>([]);
+  const [grupos,   setGrupos]   = useState<Grupo[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -571,6 +575,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
           carrera_id:     ud.alumno.carrera_id      ?? "",
           semestre_actual: String(ud.alumno.semestre_actual ?? 1),
           sexo:           ud.alumno.sexo            ?? "",
+          grupo_id:       ud.alumno.grupo_id        ?? "",
         }));
       }
       if (ud.maestro) {
@@ -591,6 +596,15 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [usuario.id]);
+
+  // Cargar grupos cuando cambia carrera o semestre (solo para alumno)
+  useEffect(() => {
+    if (form.rol !== "alumno" || !form.carrera_id) { setGrupos([]); return; }
+    fetch(`/api/grupos?carrera_id=${form.carrera_id}&semestre=${form.semestre_actual}`)
+      .then(r => r.json())
+      .then(d => setGrupos(d.grupos ?? []));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.carrera_id, form.semestre_actual, form.rol]);
 
   function set(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -615,6 +629,7 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
           carrera_id:      form.carrera_id      || undefined,
           semestre_actual: form.semestre_actual ? parseInt(form.semestre_actual) : undefined,
           sexo:            form.sexo            || undefined,
+          grupo_id:        form.grupo_id !== undefined ? (form.grupo_id || null) : undefined,
           // Maestro
           rfc:             form.rfc             || undefined,
           especialidad:    form.especialidad    || undefined,
@@ -734,6 +749,21 @@ function ModalEditarUsuario({ usuario, onClose, onSaved }: {
                   <option value="F">Femenino</option>
                   <option value="NB">No binario</option>
                 </select>
+              </div>
+              <div>
+                <label className={labelBase}>Grupo <span className="font-normal normal-case">(opcional)</span></label>
+                <select
+                  value={form.grupo_id}
+                  onChange={(e) => set("grupo_id", e.target.value)}
+                  disabled={!form.carrera_id}
+                  className={`${inputBase} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <option value="">{!form.carrera_id ? "Primero selecciona una carrera" : "Sin asignar"}</option>
+                  {grupos.map(g => <option key={g.id} value={g.id}>{g.nombre} — {g.turno}</option>)}
+                </select>
+                {form.carrera_id && grupos.length === 0 && (
+                  <p className="text-xs text-on-surface-variant italic mt-1">No hay grupos registrados para esta carrera y semestre.</p>
+                )}
               </div>
             </>)}
 

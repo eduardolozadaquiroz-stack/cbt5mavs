@@ -109,7 +109,7 @@ export default function DashboardAlumnoPage() {
             </div>
           </div>
 
-          <ReinscripcionCard />
+          <ReinscripcionCard role="alumno" />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-lg">
 

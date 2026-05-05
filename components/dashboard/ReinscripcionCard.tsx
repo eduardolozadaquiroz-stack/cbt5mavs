@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 interface ReinscripcionCardProps {
   className?: string;
+  /** "alumno" o "padres" — añade botón "Ir a mi trámite" */
+  role?: "alumno" | "padres";
 }
 
-export default function ReinscripcionCard({ className = "" }: ReinscripcionCardProps) {
+export default function ReinscripcionCard({ className = "", role }: ReinscripcionCardProps) {
   const { config } = useAdminConfig();
   const r = config.reinscripcion;
 
@@ -120,6 +123,17 @@ export default function ReinscripcionCard({ className = "" }: ReinscripcionCardP
                 </svg>
                 Referencia de pago
               </a>
+            )}
+            {role && (
+              <Link
+                href={role === "alumno" ? "/dashboard/alumno/reinscripcion" : "/dashboard/padres/reinscripcion"}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {role === "alumno" ? "Mi trámite" : "Ver estado"}
+              </Link>
             )}
           </div>
         </div>

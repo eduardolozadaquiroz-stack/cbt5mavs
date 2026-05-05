@@ -40,10 +40,12 @@ export async function GET(
   if (data.rol === "alumno") {
     const { data: a } = await admin
       .from("alumnos")
-      .select("matricula, curp, carrera_id, semestre_actual, sexo")
+      .select("matricula, curp, carrera_id, semestre_actual, sexo, alumno_grupo(grupo_id, activo)")
       .eq("id", id)
       .maybeSingle();
-    alumno = a ?? null;
+    const grupoActivo = (a?.alumno_grupo as Array<{ grupo_id: string; activo: boolean }> | null)
+      ?.find(g => g.activo);
+    alumno = a ? { ...a, grupo_id: grupoActivo?.grupo_id ?? null } : null;
   } else if (data.rol === "maestro") {
     const { data: m } = await admin
       .from("maestros")
@@ -104,6 +106,20 @@ export async function PATCH(
   if (typeof body.sexo === "string")            alumnoUpdates.sexo            = ["M", "F", "NB"].includes(body.sexo as string) ? body.sexo : null;
   if (Object.keys(alumnoUpdates).length > 0) {
     await admin.from("alumnos").update(alumnoUpdates).eq("id", id);
+  }
+
+  // Actualizar grupo del alumno si se proporcionó grupo_id
+  if ("grupo_id" in body) {
+    // Desactivar asignaciones previas
+    await admin.from("alumno_grupo").update({ activo: false }).eq("alumno_id", id);
+    // Asignar nuevo grupo si se proporcionó uno
+    const nuevoGrupo = body.grupo_id as string | null;
+    if (nuevoGrupo && isUUID(nuevoGrupo)) {
+      await admin.from("alumno_grupo").upsert(
+        { alumno_id: id, grupo_id: nuevoGrupo, activo: true },
+        { onConflict: "alumno_id,grupo_id" }
+      );
+    }
   }
 
   // Actualizar tabla maestros si se proporcionaron campos específicos

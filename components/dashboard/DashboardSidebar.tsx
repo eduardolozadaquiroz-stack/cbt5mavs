@@ -102,17 +102,22 @@ export default function DashboardSidebar({
   let visibleLinks: { id: ActiveLink; label: string; category?: string }[] = [];
 
   if (detectedRole === "padres") {
-    // Padres solo ven: inicio, calificaciones, asistencias, horarios, avisos
+    // Padres solo ven: inicio, calificaciones, asistencias, horarios, avisos, reinscripcion
     visibleLinks = [
-      { id: "inicio",          label: "Inicio" },
-      { id: "calificaciones",  label: "Calificaciones" },
-      { id: "asistencias",     label: "Asistencias" },
-      { id: "horarios",        label: "Horarios" },
-      { id: "avisos",          label: "Avisos" },
+      { id: "inicio",           label: "Inicio" },
+      { id: "calificaciones",   label: "Calificaciones" },
+      { id: "asistencias",      label: "Asistencias" },
+      { id: "horarios",         label: "Horarios" },
+      { id: "avisos",           label: "Avisos" },
+      { id: "reinscripcion",    label: "Reinscripción" },
     ];
   } else if (detectedRole === "alumno") {
-    // Alumnos ven los links básicos sin usuarios ni audit-log
-    visibleLinks = navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.category !== "contenido");
+    // Alumnos ven los links básicos sin usuarios, audit-log ni edición de contenido
+    // Añade "reinscripcion" explícitamente (ya que category contenido lo excluiría)
+    visibleLinks = [
+      ...navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.category !== "contenido"),
+      { id: "reinscripcion", label: "Reinscripción" },
+    ];
   } else if (detectedRole === "maestro") {
     // Maestros ven los links sin usuarios ni audit-log ni edición de contenido
     visibleLinks = navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.category !== "contenido");

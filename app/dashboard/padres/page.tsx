@@ -185,7 +185,7 @@ export default function PadresDashboard() {
             </button>
           </div>
 
-          <ReinscripcionCard />
+          <ReinscripcionCard role="padres" />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-lg mb-xl">
 
