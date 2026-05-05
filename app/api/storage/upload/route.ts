@@ -27,22 +27,22 @@ const BUCKET_CONFIG: Record<
 > = {
   avatars: {
     maxBytes: 2 * 1024 * 1024, // 2 MB
-    allowedMimes: ["image/jpeg", "image/png", "image/webp"],
+    allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
     roles: ["admin", "maestro", "alumno", "padres"],
   },
   documentos: {
     maxBytes: 10 * 1024 * 1024, // 10 MB
-    allowedMimes: ["application/pdf", "image/jpeg", "image/png"],
+    allowedMimes: ["application/pdf", "image/jpeg", "image/jpg", "image/png"],
     roles: ["admin"],
   },
   avisos: {
     maxBytes: 5 * 1024 * 1024, // 5 MB
-    allowedMimes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"],
     roles: ["admin", "maestro"],
   },
   site: {
     maxBytes: 5 * 1024 * 1024, // 5 MB
-    allowedMimes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
+    allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"],
     roles: ["admin"],
   },
 };

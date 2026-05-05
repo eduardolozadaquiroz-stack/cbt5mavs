@@ -29,17 +29,14 @@ const TIPO_COLORS: Record<Tipo, string> = {
 
 const TIPOS: Tipo[] = ["Urgente", "Académico", "Administrativo", "Institucional", "Sistema"];
 
-async function uploadFoto(file: File): Promise<string | null> {
+async function uploadFoto(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("bucket", "avisos");
   fd.append("file", file);
-  try {
-    const r = await fetch("/api/storage/upload", { method: "POST", body: fd });
-    const d = await r.json();
-    return d.ok ? (d.url as string) : null;
-  } catch {
-    return null;
-  }
+  const r = await fetch("/api/storage/upload", { method: "POST", body: fd });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error ?? "Error al subir la imagen");
+  return d.url as string;
 }
 
 // ── Modal crear / editar aviso ────────────────────────────────────────────────
@@ -75,11 +72,16 @@ function ModalAviso({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const url = await uploadFoto(file);
-    if (url) set("imagen_url", url);
-    else setErr("No se pudo subir la imagen. Intenta de nuevo.");
-    setUploading(false);
-    e.target.value = "";
+    setErr("");
+    try {
+      const url = await uploadFoto(file);
+      set("imagen_url", url);
+    } catch (uploadErr) {
+      setErr(uploadErr instanceof Error ? uploadErr.message : "No se pudo subir la imagen.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   }
 
   async function handleSave() {
