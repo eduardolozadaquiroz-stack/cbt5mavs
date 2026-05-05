@@ -92,11 +92,12 @@ export default function DashboardSidebar({
   let visibleLinks: { id: ActiveLink; label: string; category?: string }[] = [];
 
   if (detectedRole === "padres") {
-    // Padres solo ven: inicio, calificaciones, asistencias
+    // Padres solo ven: inicio, calificaciones, asistencias, avisos
     visibleLinks = [
       { id: "inicio",          label: "Inicio" },
       { id: "calificaciones",  label: "Calificaciones" },
       { id: "asistencias",     label: "Asistencias" },
+      { id: "avisos",          label: "Avisos" },
     ];
   } else if (detectedRole === "alumno") {
     // Alumnos ven los links básicos sin usuarios ni audit-log
