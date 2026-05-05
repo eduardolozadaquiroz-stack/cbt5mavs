@@ -6,6 +6,48 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 const BASE = "/dashboard/administrador";
 
+// ── Emoji Picker ─────────────────────────────────────────────────────────────
+const EMOJI_GROUPS = [
+  { label: "Frecuentes",  emojis: ["😊","👍","📢","⚠️","✅","❌","📌","🔔","📅","🏫","📝","🎓","📣","💡","⭐"] },
+  { label: "Caras",       emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔"] },
+  { label: "Símbolos",    emojis: ["✨","🌟","💫","⚡","🔥","❄️","🌈","💥","🎉","🎊","🏆","🥇","🎯","💯","🚀","⏰","📆","🗓️","🔑","🔒","💼","📊","📈","📉","📋","📄","📜","📬","📧","🔗"] },
+  { label: "Gestos",      emojis: ["👋","🤚","✋","🖐️","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","🤲","🤝","🙏","💪","🦾","🖊️"] },
+];
+
+function EmojiPicker({ onSelect, onClose }: { onSelect: (e: string) => void; onClose: () => void }) {
+  const [tab, setTab] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(ev: MouseEvent) {
+      if (ref.current && !ref.current.contains(ev.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="absolute z-50 bottom-full mb-1 left-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl w-72">
+      <div className="flex border-b border-slate-100 dark:border-slate-700 overflow-x-auto">
+        {EMOJI_GROUPS.map((g, i) => (
+          <button key={g.label} onClick={() => setTab(i)}
+            className={`px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors ${tab === i ? "border-b-2 border-blue-600 text-blue-700" : "text-slate-500 hover:text-slate-700"}`}>
+            {g.label}
+          </button>
+        ))}
+      </div>
+      <div className="p-2 grid grid-cols-8 gap-0.5 max-h-40 overflow-y-auto">
+        {EMOJI_GROUPS[tab].emojis.map((em) => (
+          <button key={em} onClick={() => onSelect(em)}
+            className="text-xl hover:bg-slate-100 dark:hover:bg-slate-800 rounded p-1 transition-colors leading-none">
+            {em}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type Tipo = "urgente" | "academico" | "administrativo" | "institucional" | "sistema";
 
 const TIPO_LABEL: Record<Tipo, string> = {
@@ -71,7 +113,31 @@ function ModalAviso({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [emojiTarget, setEmojiTarget] = useState<"titulo" | "cuerpo" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const tituloRef = useRef<HTMLInputElement>(null);
+  const cuerpoRef = useRef<HTMLTextAreaElement>(null);
+
+  function insertEmoji(em: string) {
+    if (!emojiTarget) return;
+    if (emojiTarget === "titulo") {
+      const el = tituloRef.current;
+      if (!el) { set("titulo", form.titulo + em); return; }
+      const start = el.selectionStart ?? form.titulo.length;
+      const end = el.selectionEnd ?? form.titulo.length;
+      const next = form.titulo.slice(0, start) + em + form.titulo.slice(end);
+      set("titulo", next);
+      setTimeout(() => { el.focus(); el.setSelectionRange(start + em.length, start + em.length); }, 0);
+    } else {
+      const el = cuerpoRef.current;
+      if (!el) { set("cuerpo", form.cuerpo + em); return; }
+      const start = el.selectionStart ?? form.cuerpo.length;
+      const end = el.selectionEnd ?? form.cuerpo.length;
+      const next = form.cuerpo.slice(0, start) + em + form.cuerpo.slice(end);
+      set("cuerpo", next);
+      setTimeout(() => { el.focus(); el.setSelectionRange(start + em.length, start + em.length); }, 0);
+    }
+  }
 
   function set(k: string, v: string | boolean) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -150,12 +216,22 @@ function ModalAviso({
           {/* Título */}
           <div>
             <label className={labelBase}>Título *</label>
-            <input
-              value={form.titulo}
-              onChange={(e) => set("titulo", e.target.value)}
-              placeholder="Título del aviso..."
-              className={inputBase}
-            />
+            <div className="relative">
+              <input
+                ref={tituloRef}
+                value={form.titulo}
+                onChange={(e) => set("titulo", e.target.value)}
+                placeholder="Título del aviso..."
+                className={`${inputBase} pr-10`}
+              />
+              <button type="button" onClick={() => setEmojiTarget(v => v === "titulo" ? null : "titulo")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-lg hover:scale-110 transition-transform" title="Insertar emoji">
+                😊
+              </button>
+              {emojiTarget === "titulo" && (
+                <EmojiPicker onSelect={(em) => { insertEmoji(em); }} onClose={() => setEmojiTarget(null)} />
+              )}
+            </div>
           </div>
 
           {/* Tipo + Estado */}
@@ -204,13 +280,23 @@ function ModalAviso({
           {/* Contenido */}
           <div>
             <label className={labelBase}>Contenido *</label>
-            <textarea
-              value={form.cuerpo}
-              onChange={(e) => set("cuerpo", e.target.value)}
-              placeholder="Escribe el contenido del aviso..."
-              rows={5}
-              className={`${inputBase} resize-y`}
-            />
+            <div className="relative">
+              <textarea
+                ref={cuerpoRef}
+                value={form.cuerpo}
+                onChange={(e) => set("cuerpo", e.target.value)}
+                placeholder="Escribe el contenido del aviso..."
+                rows={5}
+                className={`${inputBase} resize-y pr-10`}
+              />
+              <button type="button" onClick={() => setEmojiTarget(v => v === "cuerpo" ? null : "cuerpo")}
+                className="absolute right-2 top-2 text-lg hover:scale-110 transition-transform" title="Insertar emoji">
+                😊
+              </button>
+              {emojiTarget === "cuerpo" && (
+                <EmojiPicker onSelect={(em) => { insertEmoji(em); }} onClose={() => setEmojiTarget(null)} />
+              )}
+            </div>
           </div>
 
           {/* Imagen */}
@@ -281,26 +367,50 @@ function ModalAviso({
 // ── Modal de confirmación para eliminar ──────────────────────────────────────
 function ModalEliminar({
   titulo,
+  esArchivado,
   onClose,
   onConfirm,
 }: {
   titulo: string;
+  esArchivado: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-sm p-5">
-        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-2">¿Eliminar aviso?</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          Se eliminará <span className="font-medium text-slate-700 dark:text-slate-200">"{titulo}"</span>. Esta acción no se puede deshacer.
-        </p>
+        {esArchivado ? (
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-red-600 text-2xl">🗑️</span>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100">¿Eliminar permanentemente?</h3>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              El aviso <span className="font-medium text-slate-700 dark:text-slate-200">&quot;{titulo}&quot;</span> ya está archivado.
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-400 mb-4 font-medium">
+              ⚠️ Esta acción es irreversible. El aviso se borrará definitivamente.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-amber-500 text-2xl">📦</span>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100">¿Archivar aviso?</h3>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              El aviso <span className="font-medium text-slate-700 dark:text-slate-200">&quot;{titulo}&quot;</span> se ocultará del sitio público y quedará archivado. Podrás eliminarlo permanentemente desde ahí.
+            </p>
+          </>
+        )}
         <div className="flex gap-2">
           <button
             onClick={onConfirm}
-            className="flex-1 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors"
+            className={`flex-1 py-2 text-white text-sm font-semibold rounded-lg transition-colors ${
+              esArchivado ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"
+            }`}
           >
-            Eliminar
+            {esArchivado ? "Eliminar definitivamente" : "Archivar"}
           </button>
           <button
             onClick={onClose}
@@ -353,14 +463,24 @@ export default function AvisosAdminPage() {
     } catch { /* ignore */ }
   }
 
-  async function deleteAviso(id: string) {
-    try {
-      const r = await fetch(`/api/avisos/${id}`, { method: "DELETE" });
-      if (r.ok) {
-        setAvisos((prev) => prev.filter((a) => a.id !== id));
-        setModalEliminar(null);
-      }
-    } catch { /* ignore */ }
+  async function handleDeleteOrArchive(a: Aviso) {
+    if (a.activo) {
+      // Publicado → archivar (soft delete)
+      try {
+        const r = await fetch(`/api/avisos/${a.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activo: false }),
+        });
+        if (r.ok) { loadAvisos(); setModalEliminar(null); }
+      } catch { /* ignore */ }
+    } else {
+      // Archivado → eliminar definitivamente
+      try {
+        const r = await fetch(`/api/avisos/${a.id}`, { method: "DELETE" });
+        if (r.ok) { setAvisos((prev) => prev.filter((x) => x.id !== a.id)); setModalEliminar(null); }
+      } catch { /* ignore */ }
+    }
   }
 
   const filtrados = avisos.filter((a) => {
@@ -560,8 +680,9 @@ export default function AvisosAdminPage() {
       {modalEliminar && (
         <ModalEliminar
           titulo={modalEliminar.titulo}
+          esArchivado={!modalEliminar.activo}
           onClose={() => setModalEliminar(null)}
-          onConfirm={() => deleteAviso(modalEliminar.id)}
+          onConfirm={() => handleDeleteOrArchive(modalEliminar)}
         />
       )}
     </>
