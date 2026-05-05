@@ -95,15 +95,25 @@ export function useRealtimeAvisos(para?: "alumnos" | "maestros" | "padres") {
         "postgres_changes",
         { event: "*", schema: "public", table: "avisos" },
         (payload) => {
+          // Verificar que el destinatario coincide con el rol del cliente
+          const destLabel = para
+            ? { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" }[para]
+            : null;
+          const destOk = (row: DbRow) =>
+            !para || row.destinatario === "Todos" || row.destinatario === destLabel;
+
           if (payload.eventType === "INSERT") {
-            const mapped = mapDbRow(payload.new as DbRow);
-            if (mapped.activo) {
+            const raw = payload.new as DbRow;
+            const mapped = mapDbRow(raw);
+            if (mapped.activo && destOk(raw)) {
               setAvisos((prev) => [mapped, ...prev]);
             }
           } else if (payload.eventType === "UPDATE") {
-            const mapped = mapDbRow(payload.new as DbRow);
+            const raw = payload.new as DbRow;
+            const mapped = mapDbRow(raw);
+            const canShow = mapped.activo && destOk(raw);
             setAvisos((prev) =>
-              mapped.activo
+              canShow
                 ? prev.map((a) => (a.id === mapped.id ? mapped : a))
                 : prev.filter((a) => a.id !== mapped.id)
             );

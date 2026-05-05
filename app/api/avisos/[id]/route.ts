@@ -32,6 +32,16 @@ export async function GET(
     .single();
 
   if (error || !data) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+  // Aviso exclusivo para padres: solo padres, admin y maestro pueden verlo
+  if (data.destinatario === "Padres") {
+    const authUser = await getAuthUser();
+    if (!authUser || (authUser.rol !== "padres" && authUser.rol !== "admin" && authUser.rol !== "maestro")) {
+      // Devolver 404 para no revelar que existe
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+  }
+
   return NextResponse.json(data);
 }
 

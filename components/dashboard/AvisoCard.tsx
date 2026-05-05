@@ -277,7 +277,8 @@ export default function AvisoCard({ aviso }: { aviso: Aviso }) {
                 <video
                   key={i}
                   controls
-                  preload="metadata"
+                  playsInline
+                  preload="auto"
                   className="w-full rounded-xl bg-slate-950 max-h-80"
                   src={url}
                 >
@@ -495,7 +496,7 @@ export default function AvisoCard({ aviso }: { aviso: Aviso }) {
                 <div className="space-y-2.5">
                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">🎥 Videos adjuntos</p>
                   {videos.map((url, i) => (
-                    <video key={i} controls preload="metadata" className="w-full rounded-xl bg-slate-950 max-h-72" src={url}>
+                    <video key={i} controls playsInline preload="auto" className="w-full rounded-xl bg-slate-950 max-h-72" src={url}>
                       Tu navegador no soporta video HTML5.
                     </video>
                   ))}

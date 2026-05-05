@@ -36,10 +36,16 @@ export async function GET(request: NextRequest) {
 
   if (tipo) query = query.eq("tipo", tipo);
 
-  // Filtrar por destinatario: mostrar 'Todos' + el rol específico
+  // Filtrar por destinatario:
+  // – con ?para=X  → solo 'Todos' + ese rol
+  // – sin ?para y sin all=1 (página pública) → excluir 'Padres' (avisos privados)
+  // – sin ?para + all=1 + admin/maestro → ver todo
   const DEST_MAP: Record<string, string> = { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" };
   if (para && DEST_MAP[para.toLowerCase()]) {
     query = query.or(`destinatario.eq.Todos,destinatario.eq.${DEST_MAP[para.toLowerCase()]}`);
+  } else if (!showAll) {
+    // Página pública: nunca exponer avisos exclusivos de padres
+    query = query.neq("destinatario", "Padres");
   }
 
   const { data, error, count } = await query;
