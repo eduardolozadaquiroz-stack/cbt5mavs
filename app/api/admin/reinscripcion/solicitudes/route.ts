@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
   if (search.trim()) {
     const q = search.trim().toLowerCase();
     solicitudes = solicitudes.filter((s) => {
-      const u = (s.alumnos as Record<string, unknown>)?.usuarios as Record<string, unknown> | null;
+      const alumno = s.alumnos as unknown as Record<string, unknown> | null;
+      const u = alumno?.usuarios as Record<string, unknown> | null;
       const fullName = [u?.apellido_paterno, u?.apellido_materno, u?.nombre].filter(Boolean).join(" ").toLowerCase();
       return fullName.includes(q);
     });
