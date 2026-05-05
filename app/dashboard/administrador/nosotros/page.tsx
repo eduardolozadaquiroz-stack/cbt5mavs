@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
+import SavedToast from "@/components/SavedToast";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 import type { DirectivoConfig, InstalacionConfig, ReconocimientoConfig, NosotrosConfig, HistoriaEvento } from "@/app/context/AdminConfigContext";
@@ -188,7 +189,7 @@ export default function NosotrosAdminPage() {
         userImageAlt="Administrador"
         userName="Mtra. Viderique"
         userRole="Administradora"
-        activeTopLink="dashboard"
+        activeTopLink="edicion"
         showSearch
         linkBase={BASE}
       />
@@ -203,11 +204,7 @@ export default function NosotrosAdminPage() {
             </p>
           </div>
 
-          {saved && (
-            <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200 text-sm">
-              ✅ Cambios guardados y publicados
-            </div>
-          )}
+          <SavedToast visible={saved} message="✅ Cambios guardados y publicados" />
 
           <form onSubmit={handleSave} className="space-y-6">
 

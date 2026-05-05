@@ -103,9 +103,16 @@ export function useRealtimeNotificaciones(para?: string) {
 
     fetchNotifs();
 
-    const client  = getBrowserClient();
-    const channel = client
-      .channel("topbar:avisos:realtime")
+    // Delay antes de suscribirse para evitar "WebSocket closed before connection
+    // established" cuando el usuario navega rápido entre páginas.
+    let cleanup: (() => void) | null = null;
+    let active = true;
+
+    const timer = setTimeout(() => {
+      if (!active) return;
+      const client = getBrowserClient();
+      const ch = client
+        .channel("topbar:avisos:realtime")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "avisos" },
@@ -145,9 +152,13 @@ export function useRealtimeNotificaciones(para?: string) {
         }
       )
       .subscribe();
+      cleanup = () => { client.removeChannel(ch); };
+    }, 400);
 
     return () => {
-      client.removeChannel(channel);
+      active = false;
+      clearTimeout(timer);
+      cleanup?.();
     };
   }, [fetchNotifs, mapAviso]);
 

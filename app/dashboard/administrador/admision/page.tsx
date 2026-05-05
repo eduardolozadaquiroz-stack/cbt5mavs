@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import SavedToast from "@/components/SavedToast";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 const BASE = "/dashboard/administrador";
@@ -40,7 +41,7 @@ export default function AdmisionEditPage() {
         userImageAlt="Administrador"
         userName="Mtra. Viderique"
         userRole="Administradora"
-        activeTopLink="dashboard"
+        activeTopLink="edicion"
         showSearch
         linkBase={BASE}
       />
@@ -58,11 +59,7 @@ export default function AdmisionEditPage() {
             </p>
           </div>
 
-          {saved && (
-            <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200 text-sm">
-              ✅ Cambios guardados exitosamente
-            </div>
-          )}
+          <SavedToast visible={saved} />
 
           <form onSubmit={handleSave} className="space-y-6">
             {/* Habilitar/Deshabilitar sección */}

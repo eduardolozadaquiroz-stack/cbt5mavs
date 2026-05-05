@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import SavedToast from "@/components/SavedToast";
 
 const BASE = "/dashboard/administrador";
 
@@ -123,7 +124,7 @@ export default function ContactoEditPage() {
   if (loading) {
     return (
       <>
-        <DashboardTopbar userImageAlt="Administrador" activeTopLink="dashboard" showSearch linkBase={BASE} />
+        <DashboardTopbar userImageAlt="Administrador" activeTopLink="edicion" showSearch linkBase={BASE} />
         <div className="flex pt-14">
           <DashboardSidebar activeLink="contacto" headerVariant="school-icon" linkBase={BASE} />
           <main className="flex-1 md:ml-64 p-8 text-center text-slate-400">Cargando configuración...</main>
@@ -136,7 +137,7 @@ export default function ContactoEditPage() {
     <>
       <DashboardTopbar
         userImageAlt="Administrador"
-        activeTopLink="dashboard"
+        activeTopLink="edicion"
         showSearch
         linkBase={BASE}
       />
@@ -154,11 +155,7 @@ export default function ContactoEditPage() {
             </p>
           </div>
 
-          {saved && (
-            <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200 text-sm">
-              ✅ Cambios guardados exitosamente
-            </div>
-          )}
+          <SavedToast visible={saved} />
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 text-sm">
               ❌ {error}
