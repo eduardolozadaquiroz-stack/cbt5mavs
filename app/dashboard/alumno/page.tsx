@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 interface Calificacion {
   id: string;
@@ -27,6 +28,7 @@ function estatusChip(prom: number | null) {
 }
 
 export default function DashboardAlumnoPage() {
+  const { config } = useAdminConfig();
   const [calificaciones, setCalificaciones] = useState<Calificacion[]>([]);
   const [avisos, setAvisos] = useState<{ id: string; titulo: string; tipo: string; contenido: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,31 @@ export default function DashboardAlumnoPage() {
 
   const aviso1 = avisos.find((a) => a.tipo === "urgente") ?? avisos[0];
   const aviso2 = avisos.find((a) => a !== aviso1) ?? null;
+
+  if (config.siteConfig?.mantenimiento) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+        <div className="text-center max-w-md">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="CBT Núm. 5" className="h-20 w-auto mx-auto mb-6 opacity-70" />
+          <div className="inline-flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-4">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            Sistema en mantenimiento
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+            Estamos mejorando el sistema
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
+            El sistema de gestión escolar se encuentra temporalmente en mantenimiento.
+            Por favor, intenta acceder más tarde.
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Si tienes dudas, contacta a la administración del plantel.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

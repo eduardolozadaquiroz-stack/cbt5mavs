@@ -60,7 +60,7 @@ export default function RolesPage() {
         activeTopLink="configuracion" showSearch linkBase={BASE}
       />
       <div className="flex pt-14">
-        <DashboardSidebar activeLink="inicio" headerVariant="school-icon" linkBase={BASE} />
+        <DashboardSidebar activeLink="configuracion" headerVariant="school-icon" linkBase={BASE} />
         <main className="flex-1 md:ml-64 p-4 md:p-5 lg:p-6 max-w-[1100px] mx-auto w-full">
 
           <div className="flex items-center gap-1 text-xs text-slate-500 mb-4">

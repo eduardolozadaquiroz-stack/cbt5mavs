@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
+import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 type ActiveLink =
   | "inicio"
@@ -77,6 +78,9 @@ export default function DashboardSidebar({
      linkBase?.includes("/padres") ? "padres" :
      "admin");
 
+  const { config } = useAdminConfig();
+  const ciclo = config.siteConfig?.ciclo ?? "2025-2026";
+
   // Logout seguro: invalida el JWT en el servidor
   const handleLogout = useCallback(async () => {
     try {
@@ -131,7 +135,7 @@ export default function DashboardSidebar({
           <div className="min-w-0">
             <div className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo 2025-2026</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</div>
           </div>
         </div>
       )}
@@ -143,7 +147,7 @@ export default function DashboardSidebar({
           <div className="min-w-0">
             <h2 className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo 2025-2026</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</p>
           </div>
         </div>
       )}
@@ -155,7 +159,7 @@ export default function DashboardSidebar({
           <div className="min-w-0">
             <h2 className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo 2025-2026</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</p>
           </div>
         </div>
       )}

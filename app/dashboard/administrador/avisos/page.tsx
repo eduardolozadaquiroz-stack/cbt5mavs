@@ -723,7 +723,7 @@ export default function AvisosAdminPage() {
         linkBase={BASE}
       />
       <div className="flex pt-14">
-        <DashboardSidebar activeLink="inicio" headerVariant="school-icon" linkBase={BASE} />
+        <DashboardSidebar activeLink="avisos" headerVariant="school-icon" linkBase={BASE} />
         <main className="flex-1 md:ml-64 p-4 md:p-5 lg:p-6 max-w-[1280px] mx-auto w-full">
 
           {/* Encabezado */}

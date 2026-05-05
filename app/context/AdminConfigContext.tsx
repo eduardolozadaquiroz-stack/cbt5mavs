@@ -138,12 +138,25 @@ export interface SectionConfig {
   lastUpdated: string;
 }
 
+export interface SiteConfig {
+  nombreInstituto: string;
+  municipio: string;
+  estado: string;
+  director: string;
+  ciclo: string;
+  turnoMatutino: boolean;
+  turnoVespertino: boolean;
+  registroPublico: boolean;
+  mantenimiento: boolean;
+}
+
 export interface AdminConfig {
   inicio: InicioConfig;
   carreras: CarrerasConfig;
   nosotros: NosotrosConfig;
   admision: AdmisionConfig;
   contacto: ContactoConfig;
+  siteConfig: SiteConfig;
   avisos: Aviso[];
   secciones: Record<string, SectionConfig>;
   ultimaActualizacion: string;
@@ -156,6 +169,7 @@ interface AdminConfigContextType {
   updateNosotros: (data: Partial<NosotrosConfig>) => void;
   updateAdmision: (data: Partial<AdmisionConfig>) => void;
   updateContacto: (data: Partial<ContactoConfig>) => void;
+  updateSiteConfig: (data: Partial<SiteConfig>) => void;
   addAviso: (aviso: Aviso) => void;
   updateAviso: (id: number, data: Partial<Aviso>) => void;
   deleteAviso: (id: number) => void;
@@ -356,6 +370,17 @@ const DEFAULT_CONFIG: AdminConfig = {
     contacto: { enabled: true, lastUpdated: new Date().toISOString() },
     nosotros: { enabled: true, lastUpdated: new Date().toISOString() },
   },
+  siteConfig: {
+    nombreInstituto: "Centro de Bachillerato Tecnológico Núm. 5",
+    municipio: "Chalco",
+    estado: "Estado de México",
+    director: "María Amparo Viderique de Shein",
+    ciclo: "2025-2026",
+    turnoMatutino: true,
+    turnoVespertino: true,
+    registroPublico: true,
+    mantenimiento: false,
+  },
   ultimaActualizacion: new Date().toISOString(),
 };
 
@@ -387,6 +412,7 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
         },
       },
       secciones: { ...DEFAULT_CONFIG.secciones, ...(parsed.secciones ?? {}) },
+      siteConfig: { ...DEFAULT_CONFIG.siteConfig, ...(parsed.siteConfig ?? {}) },
     };
   }
 
@@ -495,6 +521,14 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateSiteConfig = (data: Partial<SiteConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      siteConfig: { ...prev.siteConfig, ...data },
+      ultimaActualizacion: new Date().toISOString(),
+    }));
+  };
+
   const addAviso = (aviso: Aviso) => {
     setConfig((prev) => ({
       ...prev,
@@ -550,6 +584,7 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
         updateNosotros,
         updateAdmision,
         updateContacto,
+        updateSiteConfig,
         addAviso,
         updateAviso,
         deleteAviso,

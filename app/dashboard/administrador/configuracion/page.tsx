@@ -1,29 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import Link from "next/link";
+import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 const BASE = "/dashboard/administrador";
 
 export default function ConfiguracionPage() {
+  const { config, updateSiteConfig } = useAdminConfig();
   const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({
-    nombreInstituto: "Centro de Bachillerato Tecnológico Núm. 5",
-    municipio: "Chalco",
-    estado: "Estado de México",
-    director: "María Amparo Viderique de Shein",
-    ciclo: "2023-2024",
-    turnoMatutino: true,
-    turnoVespertino: true,
-    mantenimiento: false,
-    registroPublico: true,
-  });
+  const [form, setForm] = useState(config.siteConfig);
+
+  // Sincronizar cuando el contexto cargue desde la API
+  useEffect(() => {
+    setForm(config.siteConfig);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.siteConfig.ciclo]);
 
   function set(k: string, v: string | boolean) { setForm((f) => ({ ...f, [k]: v })); setSaved(false); }
 
-  function handleSave(e: React.FormEvent) { e.preventDefault(); setSaved(true); }
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    updateSiteConfig(form);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
 
   const inputBase =
     "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
@@ -41,7 +44,7 @@ export default function ConfiguracionPage() {
         activeTopLink="configuracion" showSearch linkBase={BASE}
       />
       <div className="flex pt-14">
-        <DashboardSidebar activeLink="inicio" headerVariant="school-icon" linkBase={BASE} />
+        <DashboardSidebar activeLink="configuracion" headerVariant="school-icon" linkBase={BASE} />
         <main className="flex-1 md:ml-64 p-4 md:p-5 lg:p-6 max-w-[960px] mx-auto w-full">
 
           <div className="mb-5">
@@ -94,23 +97,40 @@ export default function ConfiguracionPage() {
 
             <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-4">
               <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">Opciones generales</h3>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {[
-                  { key: "turnoMatutino",    label: "Turno Matutino activo" },
-                  { key: "turnoVespertino",  label: "Turno Vespertino activo" },
-                  { key: "registroPublico",  label: "Admisión abierta al público" },
-                  { key: "mantenimiento",    label: "Modo mantenimiento (bloquea acceso a alumnos)" },
-                ].map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                    <div
-                      onClick={() => set(key, !(form as Record<string, string | boolean>)[key])}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${(form as Record<string, string | boolean>)[key] ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"}`}
-                    >
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(form as Record<string, string | boolean>)[key] ? "translate-x-4" : "translate-x-0"}`} />
-                    </div>
-                    <span className="text-sm text-slate-700 dark:text-slate-300">{label}</span>
-                  </label>
-                ))}
+                  { key: "turnoMatutino",    label: "Turno Matutino activo",                      desc: "Habilita el turno de mañana" },
+                  { key: "turnoVespertino",  label: "Turno Vespertino activo",                    desc: "Habilita el turno de tarde" },
+                  { key: "registroPublico",  label: "Admisión abierta al público",                desc: "Los aspirantes pueden consultar el proceso" },
+                  { key: "mantenimiento",    label: "Modo mantenimiento",                         desc: "Bloquea acceso a alumnos, maestros y padres" },
+                ].map(({ key, label, desc }) => {
+                  const isOn = !!(form as Record<string, string | boolean>)[key];
+                  return (
+                    <label key={key} className="flex items-center justify-between gap-4 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-100 block">{label}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{desc}</span>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isOn}
+                        onClick={() => set(key, !isOn)}
+                        className={`relative flex-shrink-0 w-12 h-6 rounded-full border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
+                          ${isOn
+                            ? "bg-blue-600 border-blue-600"
+                            : "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-500"
+                          }
+                          ${key === "mantenimiento" && isOn ? "!bg-red-600 !border-red-600" : ""}
+                        `}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transition-all duration-200
+                          ${isOn ? "translate-x-6 bg-white" : "translate-x-0 bg-slate-400 dark:bg-slate-300"}
+                        `} />
+                      </button>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
