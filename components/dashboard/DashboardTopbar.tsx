@@ -69,12 +69,24 @@ export default function DashboardTopbar({
   }, []);
 
   useEffect(() => {
+    // Determinar el rol esperado según el dashboard actual
+    const expectedRol =
+      linkBase?.includes("/padres")        ? "padres"  :
+      linkBase?.includes("/alumno")        ? "alumno"  :
+      linkBase?.includes("/maestro")       ? "maestro" :
+      linkBase?.includes("/administrador") ? "admin"   : null;
+
     fetch("/api/perfil")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
-        if (data.nombre)   setDisplayName(data.nombre);
+        if (data.nombre) setDisplayName(data.nombre);
         if (data.rol) {
+          // Si el rol real no coincide con el dashboard actual → redirigir al login
+          if (expectedRol && data.rol !== expectedRol) {
+            window.location.href = "/login";
+            return;
+          }
           const labels: Record<string, string> = {
             admin:   "Administrador",
             maestro: "Maestro",

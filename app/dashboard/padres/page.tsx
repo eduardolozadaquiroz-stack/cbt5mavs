@@ -61,7 +61,7 @@ export default function PadresDashboard() {
     // Verificar que el alumno pertenece al padre
     fetch("/api/padres/mis-alumnos", { credentials: "include" })
       .then((r) => {
-        if (r.status === 401) { router.replace("/login"); return null; }
+        if (r.status === 401 || r.status === 403) { router.replace("/login"); return null; }
         return r.json();
       })
       .then((json) => {

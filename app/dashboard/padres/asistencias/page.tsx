@@ -57,7 +57,7 @@ export default function PadresAsistenciasPage() {
 
     fetch(`/api/padres/asistencias?alumno_id=${id}`, { credentials: "include" })
       .then((r) => {
-        if (r.status === 401) { router.replace("/login"); return null; }
+        if (r.status === 401 || r.status === 403) { router.replace("/login"); return null; }
         return r.json();
       })
       .then((json) => {

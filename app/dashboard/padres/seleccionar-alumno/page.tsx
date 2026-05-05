@@ -191,7 +191,7 @@ export default function SeleccionarAlumnoPage() {
     setLoadingList(true);
     try {
       const res = await fetch("/api/padres/mis-alumnos", { credentials: "include" });
-      if (res.status === 401) { router.replace("/login"); return; }
+      if (res.status === 401 || res.status === 403) { router.replace("/login"); return; }
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al cargar alumnos vinculados."); return; }
       const lista: AlumnoVinculado[] = json.alumnos ?? [];
