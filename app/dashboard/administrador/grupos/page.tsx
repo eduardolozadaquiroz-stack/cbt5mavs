@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
@@ -15,12 +15,130 @@ interface Grupo {
   carrera: { id: string; nombre: string; clave: string };
   ciclo: { id: string; nombre: string; activo: boolean };
 }
+interface Carrera { id: string; nombre: string; clave: string; }
+interface Ciclo   { id: string; nombre: string; activo: boolean; }
 
 function turnoColor(turno: string) {
   if (turno === "matutino") return "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-200";
   return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200";
 }
 
+// ─── Modal Nuevo Grupo ────────────────────────────────────────────────────────
+function NuevoGrupoModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [carreras, setCarreras] = useState<Carrera[]>([]);
+  const [ciclos,   setCiclos]   = useState<Ciclo[]>([]);
+  const [saving,   setSaving]   = useState(false);
+  const [error,    setError]    = useState("");
+  const [form, setForm] = useState({
+    nombre: "", carrera_id: "", ciclo_id: "", semestre: "1", turno: "matutino",
+  });
+
+  useEffect(() => {
+    fetch("/api/carreras").then(r => r.json()).then(d => setCarreras(d.carreras ?? []));
+    fetch("/api/admin/ciclos").then(r => r.json()).then(d => setCiclos(d.ciclos ?? []));
+  }, []);
+
+  const inp = "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300";
+  const lbl = "text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1";
+
+  async function handleGuardar() {
+    setError("");
+    if (!form.nombre.trim() || !form.carrera_id || !form.ciclo_id) {
+      setError("Nombre, carrera y ciclo son obligatorios.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/grupos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, semestre: parseInt(form.semestre, 10) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Error al crear grupo"); return; }
+      onCreated();
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Nuevo Grupo</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl leading-none">&times;</button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          {error && <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">{error}</p>}
+
+          <div>
+            <label className={lbl}>Nombre del grupo *</label>
+            <input className={inp} placeholder="Ej: 1° A Matutino" value={form.nombre}
+              onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+          </div>
+
+          <div>
+            <label className={lbl}>Carrera *</label>
+            <select className={inp} value={form.carrera_id}
+              onChange={e => setForm(f => ({ ...f, carrera_id: e.target.value }))}>
+              <option value="">— Selecciona carrera —</option>
+              {carreras.map(c => <option key={c.id} value={c.id}>{c.nombre} ({c.clave})</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Semestre *</label>
+              <select className={inp} value={form.semestre}
+                onChange={e => setForm(f => ({ ...f, semestre: e.target.value }))}>
+                {[1,2,3,4,5,6].map(s => <option key={s} value={s}>{s}° Semestre</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Turno *</label>
+              <select className={inp} value={form.turno}
+                onChange={e => setForm(f => ({ ...f, turno: e.target.value }))}>
+                <option value="matutino">Matutino</option>
+                <option value="vespertino">Vespertino</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>Ciclo escolar *</label>
+            <select className={inp} value={form.ciclo_id}
+              onChange={e => setForm(f => ({ ...f, ciclo_id: e.target.value }))}>
+              <option value="">— Selecciona ciclo —</option>
+              {ciclos.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}{c.activo ? " (activo)" : ""}
+                </option>
+              ))}
+            </select>
+            {ciclos.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                No hay ciclos registrados. Ve a Configuración &gt; Periodos para crear uno.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            Cancelar
+          </button>
+          <button onClick={handleGuardar} disabled={saving}
+            className="px-5 py-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+            {saving ? "Guardando..." : "Crear Grupo"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
 export default function GruposPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,14 +146,18 @@ export default function GruposPage() {
   const [fSem, setFSem] = useState(0);
   const [fTurno, setFTurno] = useState("Todos");
   const [query, setQuery] = useState("");
+  const [modalNuevo, setModalNuevo] = useState(false);
 
-  useEffect(() => {
+  const fetchGrupos = useCallback(() => {
+    setLoading(true);
     fetch("/api/grupos")
       .then((r) => r.json())
       .then((d) => setGrupos(d.grupos ?? []))
       .catch(() => setGrupos([]))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchGrupos(); }, [fetchGrupos]);
 
   const carreras = ["Todas", ...Array.from(new Set(grupos.map((g) => g.carrera.nombre)))];
 
@@ -50,6 +172,12 @@ export default function GruposPage() {
 
   return (
     <>
+      {modalNuevo && (
+        <NuevoGrupoModal
+          onClose={() => setModalNuevo(false)}
+          onCreated={fetchGrupos}
+        />
+      )}
       <DashboardTopbar userImageAlt="Administrador" activeTopLink="grupos" showSearch linkBase={BASE} />
       <div className="flex pt-14">
         <DashboardSidebar activeLink="grupos" headerVariant="school-icon" linkBase={BASE} />
@@ -60,6 +188,13 @@ export default function GruposPage() {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Grupos</h2>
               <p className="text-sm text-slate-500 mt-0.5">{loading ? "Cargando..." : `${grupos.length} grupos registrados`}</p>
             </div>
+            <button
+              onClick={() => setModalNuevo(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Nuevo Grupo
+            </button>
           </div>
 
           {/* Stats strip */}
