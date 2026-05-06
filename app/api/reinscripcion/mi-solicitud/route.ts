@@ -28,22 +28,38 @@ export async function GET() {
     return NextResponse.json({ solicitud: null, cicloEscolar: "" });
   }
 
-  const { data, error } = await admin
-    .from("reinscripcion_solicitudes")
-    .select(`
-      id, estado, notas_admin, ciclo_escolar, created_at, updated_at,
-      reinscripcion_documentos ( id, nombre, url, estado, notas, created_at )
-    `)
-    .eq("alumno_id", user.db_id)
-    .eq("ciclo_escolar", cicloEscolar)
-    .maybeSingle();
+  try {
+    // Paso 1: buscar la solicitud (sin join embebido para evitar problemas de schema cache)
+    const { data: sol, error: solError } = await admin
+      .from("reinscripcion_solicitudes")
+      .select("id, estado, notas_admin, ciclo_escolar, created_at, updated_at")
+      .eq("alumno_id", user.db_id)
+      .eq("ciclo_escolar", cicloEscolar)
+      .maybeSingle();
 
-  if (error) {
-    console.error("[reinscripcion GET]", error.code, error.message);
-    return NextResponse.json({ error: "Error al obtener solicitud", detail: error.message }, { status: 500 });
+    if (solError) {
+      console.error("[reinscripcion GET] solicitudes error:", solError.code, solError.message);
+      return NextResponse.json({ error: "Error al obtener solicitud", detail: solError.message }, { status: 500 });
+    }
+
+    // Paso 2: si hay solicitud, buscar sus documentos
+    let documentos: unknown[] = [];
+    if (sol) {
+      const { data: docs, error: docsError } = await admin
+        .from("reinscripcion_documentos")
+        .select("id, nombre, url, estado, notas, created_at")
+        .eq("solicitud_id", sol.id)
+        .order("created_at", { ascending: true });
+
+      if (!docsError) documentos = docs ?? [];
+    }
+
+    const solicitud = sol ? { ...sol, reinscripcion_documentos: documentos } : null;
+    return NextResponse.json({ solicitud, cicloEscolar });
+  } catch (e) {
+    console.error("[reinscripcion GET] unhandled:", e);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
-
-  return NextResponse.json({ solicitud: data ?? null, cicloEscolar });
 }
 
 export async function POST(_request: NextRequest) {
@@ -84,7 +100,8 @@ export async function POST(_request: NextRequest) {
     );
 
   if (upsertError && upsertError.code !== "23505") {
-    return NextResponse.json({ error: "Error al crear solicitud" }, { status: 500 });
+    console.error("[reinscripcion POST] upsert error:", upsertError.code, upsertError.message);
+    return NextResponse.json({ error: "Error al crear solicitud", detail: upsertError.message }, { status: 500 });
   }
 
   // Buscar la solicitud existente o recién creada
