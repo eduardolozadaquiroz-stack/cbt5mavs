@@ -14,18 +14,27 @@ export async function GET() {
 
   // Fuente primaria: ciclo activo en ciclos_escolares (lo que el admin realmente configura)
   // Fallback: site_config.reinscripcion.cicloEscolar
-  const [{ data: cicloActivo }, { data: cfg }] = await Promise.all([
-    admin.from("ciclos_escolares").select("nombre").eq("activo", true).maybeSingle(),
-    admin.from("site_config").select("config").eq("id", 1).single(),
-  ]);
+  // Paso A: leer ciclo activo y config (diagnóstico explícito)
+  const { data: cicloActivo, error: cicloError } = await admin
+    .from("ciclos_escolares")
+    .select("nombre")
+    .eq("activo", true)
+    .maybeSingle();
+
+  if (cicloError) {
+    console.error("[reinscripcion GET] ciclos_escolares error:", cicloError.code, cicloError.message);
+    return NextResponse.json({ error: "Error al leer ciclo escolar", detail: cicloError.message, step: "ciclos_escolares" }, { status: 500 });
+  }
+
+  const { data: cfg } = await admin.from("site_config").select("config").eq("id", 1).single();
 
   const reinConfig = (cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown> | undefined;
   const cicloEscolar: string =
     cicloActivo?.nombre ??
-    (typeof reinConfig?.cicloEscolar === "string" ? reinConfig.cicloEscolar : "") ;
+    (typeof reinConfig?.cicloEscolar === "string" ? reinConfig.cicloEscolar : "");
 
   if (!cicloEscolar) {
-    return NextResponse.json({ solicitud: null, cicloEscolar: "" });
+    return NextResponse.json({ solicitud: null, cicloEscolar: "", debug: "no hay ciclo activo" });
   }
 
   try {
@@ -39,7 +48,7 @@ export async function GET() {
 
     if (solError) {
       console.error("[reinscripcion GET] solicitudes error:", solError.code, solError.message);
-      return NextResponse.json({ error: "Error al obtener solicitud", detail: solError.message }, { status: 500 });
+      return NextResponse.json({ error: "Error al obtener solicitud", detail: solError.message, step: "reinscripcion_solicitudes", alumno_id: user.db_id, ciclo: cicloEscolar }, { status: 500 });
     }
 
     // Paso 2: si hay solicitud, buscar sus documentos

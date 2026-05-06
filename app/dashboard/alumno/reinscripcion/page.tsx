@@ -83,7 +83,11 @@ export default function ReinscripcionAlumnoPage() {
         window.location.href = "/login";
         return;
       }
-      if (!res.ok) throw new Error(data.error ?? "Error al cargar solicitud");
+      if (!res.ok) throw new Error(
+        (data.error ?? "Error al cargar solicitud") +
+        (data.detail ? ` — ${data.detail}` : "") +
+        (data.step ? ` [paso: ${data.step}]` : "")
+      );
       setSolicitud(data.solicitud ?? null);
       setCicloEscolar(data.cicloEscolar ?? "");
     } catch (e) {
