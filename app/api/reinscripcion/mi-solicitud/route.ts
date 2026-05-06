@@ -12,15 +12,21 @@ export async function GET() {
 
   const admin = createSupabaseAdminClient();
 
-  // Obtener el ciclo activo desde site_config
-  const { data: cfg } = await admin
-    .from("site_config")
-    .select("config")
-    .eq("id", 1)
-    .single();
-  const cicloEscolar: string = (cfg?.config as Record<string, unknown>)?.reinscripcion
-    ? ((cfg!.config as Record<string, unknown>).reinscripcion as Record<string, unknown>).cicloEscolar as string
-    : "";
+  // Fuente primaria: ciclo activo en ciclos_escolares (lo que el admin realmente configura)
+  // Fallback: site_config.reinscripcion.cicloEscolar
+  const [{ data: cicloActivo }, { data: cfg }] = await Promise.all([
+    admin.from("ciclos_escolares").select("nombre").eq("activo", true).maybeSingle(),
+    admin.from("site_config").select("config").eq("id", 1).single(),
+  ]);
+
+  const reinConfig = (cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown> | undefined;
+  const cicloEscolar: string =
+    cicloActivo?.nombre ??
+    (typeof reinConfig?.cicloEscolar === "string" ? reinConfig.cicloEscolar : "") ;
+
+  if (!cicloEscolar) {
+    return NextResponse.json({ solicitud: null, cicloEscolar: "" });
+  }
 
   const { data, error } = await admin
     .from("reinscripcion_solicitudes")
@@ -32,7 +38,10 @@ export async function GET() {
     .eq("ciclo_escolar", cicloEscolar)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: "Error al obtener solicitud" }, { status: 500 });
+  if (error) {
+    console.error("[reinscripcion GET]", error.code, error.message);
+    return NextResponse.json({ error: "Error al obtener solicitud", detail: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ solicitud: data ?? null, cicloEscolar });
 }
@@ -43,11 +52,17 @@ export async function POST(_request: NextRequest) {
 
   const admin = createSupabaseAdminClient();
 
-  // Obtener ciclo activo
-  const { data: cfg } = await admin.from("site_config").select("config").eq("id", 1).single();
+  // Fuente primaria: ciclo activo en ciclos_escolares
+  const [{ data: cicloActivo }, { data: cfg }] = await Promise.all([
+    admin.from("ciclos_escolares").select("nombre").eq("activo", true).maybeSingle(),
+    admin.from("site_config").select("config").eq("id", 1).single(),
+  ]);
+
   const reinConfig = (cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown> | undefined;
-  const cicloEscolar = (reinConfig?.cicloEscolar as string | undefined) ?? "";
-  const habilitada   = (reinConfig?.habilitada as boolean | undefined) ?? false;
+  const cicloEscolar: string =
+    cicloActivo?.nombre ??
+    (typeof reinConfig?.cicloEscolar === "string" ? reinConfig.cicloEscolar : "");
+  const habilitada = (reinConfig?.habilitada as boolean | undefined) ?? false;
 
   if (!habilitada) {
     return NextResponse.json({ error: "El proceso de reinscripción no está habilitado" }, { status: 403 });
