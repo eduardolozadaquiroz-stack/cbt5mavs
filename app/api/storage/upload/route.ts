@@ -26,29 +26,26 @@ const BUCKET_CONFIG: Record<
   { maxBytes: number; allowedMimes: string[]; roles: string[] }
 > = {
   avatars: {
-    maxBytes: 2 * 1024 * 1024, // 2 MB
+    maxBytes: 2 * 1024 * 1024,
     allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
     roles: ["admin", "maestro", "alumno", "padres"],
   },
   documentos: {
-    maxBytes: 10 * 1024 * 1024, // 10 MB
+    maxBytes: 10 * 1024 * 1024,
     allowedMimes: ["application/pdf", "image/jpeg", "image/jpg", "image/png"],
-    roles: ["admin", "alumno"],
+    roles: ["admin", "alumno", "maestro"], // todos pueden subir documentos
   },
   avisos: {
-    maxBytes: 50 * 1024 * 1024, // 50 MB (cubre videos medianos)
+    maxBytes: 50 * 1024 * 1024,
     allowedMimes: [
-      // Imágenes
       "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
-      // Videos
       "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo",
-      // Documentos
       "application/pdf",
     ],
     roles: ["admin", "maestro"],
   },
   site: {
-    maxBytes: 5 * 1024 * 1024, // 5 MB
+    maxBytes: 5 * 1024 * 1024,
     allowedMimes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"],
     roles: ["admin"],
   },
