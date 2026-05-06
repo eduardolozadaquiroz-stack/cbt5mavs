@@ -23,9 +23,11 @@ export async function GET(request: NextRequest) {
 
   const admin = createSupabaseAdminClient();
 
-  // Obtener ciclo activo
+  // Obtener ciclo activo — misma fuente que el alumno usa al crear solicitud
+  const { data: cicloActivo } = await admin.from("ciclos_escolares").select("nombre").eq("activo", true).maybeSingle();
   const { data: cfg } = await admin.from("site_config").select("config").eq("id", 1).single();
-  const cicloEscolar: string = ((cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown>)?.cicloEscolar as string ?? "";
+  const reinCfg = (cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown> | undefined;
+  const cicloEscolar: string = cicloActivo?.nombre ?? (reinCfg?.cicloEscolar as string | undefined) ?? "";
 
   let query = admin
     .from("reinscripcion_solicitudes")

@@ -127,9 +127,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);
+  // Para buckets privados (documentos) usar signed URL de larga duración.
+  // Para buckets públicos (avatars, avisos, site) usar public URL.
+  const PUBLIC_BUCKETS = ["avatars", "avisos", "site"];
+  let fileUrl: string;
+  if (PUBLIC_BUCKETS.includes(bucket)) {
+    const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);
+    fileUrl = urlData.publicUrl;
+  } else {
+    // Signed URL válida por 10 años (315360000 segundos)
+    const { data: signed, error: signErr } = await admin.storage
+      .from(bucket)
+      .createSignedUrl(path, 315360000);
+    if (signErr || !signed) {
+      return NextResponse.json({ error: "Error al generar URL del archivo" }, { status: 500 });
+    }
+    fileUrl = signed.signedUrl;
+  }
 
-  return NextResponse.json({ ok: true, url: urlData.publicUrl, path });
+  return NextResponse.json({ ok: true, url: fileUrl, path });
 }
 
 /**
