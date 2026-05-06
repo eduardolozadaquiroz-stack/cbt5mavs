@@ -149,7 +149,9 @@ function ModalDetalleSolicitud({
                           {doc.estado}
                         </span>
                       </div>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                      <a
+                        href={`/api/storage/doc-view?url=${encodeURIComponent(doc.url)}`}
+                        target="_blank" rel="noopener noreferrer"
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
                         Ver
                       </a>
