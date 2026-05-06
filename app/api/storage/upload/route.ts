@@ -86,7 +86,10 @@ export async function POST(request: NextRequest) {
 
   // Verificar que el rol tiene permiso para subir a este bucket
   if (!config.roles.includes(user.rol)) {
-    return NextResponse.json({ error: "Sin permisos para este bucket" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Sin permisos para este bucket", debug_rol: user.rol, debug_bucket: bucket },
+      { status: 403 }
+    );
   }
 
   // Validar tipo MIME

@@ -71,7 +71,10 @@ export default function FileUploadInput({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error ?? "Error al subir el archivo");
+        const debugInfo = (data as Record<string,unknown>).debug_rol
+          ? ` (rol:${(data as Record<string,unknown>).debug_rol})`
+          : "";
+        throw new Error((data.error ?? "Error al subir el archivo") + debugInfo);
       }
 
       onUploaded(data.url as string);
