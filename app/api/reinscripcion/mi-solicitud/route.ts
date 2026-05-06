@@ -46,24 +46,29 @@ export async function POST(_request: NextRequest) {
   // Obtener ciclo activo
   const { data: cfg } = await admin.from("site_config").select("config").eq("id", 1).single();
   const reinConfig = (cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown> | undefined;
-  const cicloEscolar = reinConfig?.cicloEscolar as string ?? "";
-  const habilitada   = reinConfig?.habilitada as boolean ?? false;
+  const cicloEscolar = (reinConfig?.cicloEscolar as string | undefined) ?? "";
+  const habilitada   = (reinConfig?.habilitada as boolean | undefined) ?? false;
 
   if (!habilitada) {
     return NextResponse.json({ error: "El proceso de reinscripción no está habilitado" }, { status: 403 });
   }
 
-  // Upsert: solo crear si no existe
-  const { data, error } = await admin
+  if (!cicloEscolar) {
+    return NextResponse.json(
+      { error: "El ciclo escolar aún no está configurado. Contacta al administrador." },
+      { status: 400 }
+    );
+  }
+
+  // Upsert sin .single() — con ignoreDuplicates:true no se devuelve fila cuando ya existe
+  const { error: upsertError } = await admin
     .from("reinscripcion_solicitudes")
     .upsert(
       { alumno_id: user.db_id, ciclo_escolar: cicloEscolar, estado: "borrador" },
       { onConflict: "alumno_id,ciclo_escolar", ignoreDuplicates: true }
-    )
-    .select("id, estado, ciclo_escolar")
-    .single();
+    );
 
-  if (error && error.code !== "23505") {
+  if (upsertError && upsertError.code !== "23505") {
     return NextResponse.json({ error: "Error al crear solicitud" }, { status: 500 });
   }
 
@@ -75,5 +80,5 @@ export async function POST(_request: NextRequest) {
     .eq("ciclo_escolar", cicloEscolar)
     .single();
 
-  return NextResponse.json({ solicitud: data ?? existing }, { status: 201 });
+  return NextResponse.json({ solicitud: existing }, { status: 201 });
 }

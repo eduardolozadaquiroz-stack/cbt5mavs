@@ -247,16 +247,24 @@ export default function ReinscripcionAlumnoPage() {
           <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Aún no tienes una solicitud
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
-            Inicia tu trámite de reinscripción para {cicloEscolar}.
-          </p>
-          <button
-            onClick={crearSolicitud}
-            disabled={creando}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-60 transition"
-          >
-            {creando ? "Iniciando..." : "Iniciar trámite"}
-          </button>
+          {cicloEscolar ? (
+            <>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+                Inicia tu trámite de reinscripción para <strong>{cicloEscolar}</strong>.
+              </p>
+              <button
+                onClick={crearSolicitud}
+                disabled={creando}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-60 transition"
+              >
+                {creando ? "Iniciando..." : "Iniciar trámite"}
+              </button>
+            </>
+          ) : (
+            <p className="text-yellow-600 dark:text-yellow-400 text-sm">
+              ⚠️ El ciclo escolar aún no está configurado. Contacta al administrador.
+            </p>
+          )}
         </div>
       )}
 
