@@ -44,13 +44,17 @@ CREATE OR REPLACE FUNCTION audit_generico()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
     actor_id UUID;
+    rec      JSONB;
 BEGIN
-    -- Intentar obtener el actor desde el campo capturado_por, autor_id, generado_por, etc.
+    -- Extraer el actor desde el registro JSON para no asumir columnas específicas
+    rec := CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD)::JSONB
+                ELSE row_to_json(NEW)::JSONB END;
+
     actor_id := COALESCE(
-        NEW.capturado_por,
-        NEW.autor_id,
-        NEW.generado_por,
-        NEW.atendido_por,
+        (rec->>'capturado_por')::UUID,
+        (rec->>'autor_id')::UUID,
+        (rec->>'generado_por')::UUID,
+        (rec->>'atendido_por')::UUID,
         NULL
     );
 
@@ -58,17 +62,17 @@ BEGIN
         INSERT INTO audit_log(usuario_id, accion, tabla_afectada, registro_id,
                               datos_anteriores, datos_nuevos)
         VALUES (actor_id, 'UPDATE_' || upper(TG_TABLE_NAME), TG_TABLE_NAME,
-                NEW.id::TEXT, row_to_json(OLD)::JSONB, row_to_json(NEW)::JSONB);
+                (rec->>'id')::TEXT, row_to_json(OLD)::JSONB, rec);
     ELSIF TG_OP = 'INSERT' THEN
         INSERT INTO audit_log(usuario_id, accion, tabla_afectada, registro_id,
                               datos_nuevos)
         VALUES (actor_id, 'INSERT_' || upper(TG_TABLE_NAME), TG_TABLE_NAME,
-                NEW.id::TEXT, row_to_json(NEW)::JSONB);
+                (rec->>'id')::TEXT, rec);
     ELSIF TG_OP = 'DELETE' THEN
         INSERT INTO audit_log(usuario_id, accion, tabla_afectada, registro_id,
                               datos_anteriores)
         VALUES (actor_id, 'DELETE_' || upper(TG_TABLE_NAME), TG_TABLE_NAME,
-                OLD.id::TEXT, row_to_json(OLD)::JSONB);
+                (rec->>'id')::TEXT, rec);
     END IF;
 
     RETURN COALESCE(NEW, OLD);

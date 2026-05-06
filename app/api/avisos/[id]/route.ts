@@ -131,11 +131,8 @@ export async function PATCH(
 
   const { error } = await admin.from("avisos").update(updates).eq("id", id);
   if (error) {
-    console.error("[PATCH /api/avisos] Supabase error:", error.code, error.message, error.details, error.hint);
-    return NextResponse.json({
-      error: "Error al actualizar",
-      _debug: { code: error.code, message: error.message, hint: error.hint, details: error.details },
-    }, { status: 500 });
+    console.error("[PATCH /api/avisos] Supabase error:", error.code, error.message);
+    return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
