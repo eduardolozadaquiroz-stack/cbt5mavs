@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 import FileUploadInput from "@/components/dashboard/FileUploadInput";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -77,6 +79,10 @@ export default function ReinscripcionAlumnoPage() {
     try {
       const res = await fetch("/api/reinscripcion/mi-solicitud");
       const data = await res.json();
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = "/login";
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Error al cargar solicitud");
       setSolicitud(data.solicitud ?? null);
       setCicloEscolar(data.cicloEscolar ?? "");
@@ -86,6 +92,7 @@ export default function ReinscripcionAlumnoPage() {
       setLoading(false);
     }
   }, []);
+
 
   useEffect(() => { fetchSolicitud(); }, [fetchSolicitud]);
 
@@ -167,8 +174,19 @@ export default function ReinscripcionAlumnoPage() {
   }
 
   // ─── Render guards ────────────────────────
-  if (loading) return <div className="flex justify-center py-16"><LoadingSpinner /></div>;
+  if (loading) return (
+    <>
+      <DashboardTopbar userImageAlt="Estudiante" activeTopLink="dashboard" linkBase="/dashboard/alumno" />
+      <div className="flex flex-1 pt-16">
+        <DashboardSidebar activeLink="reinscripcion" headerVariant="simple" linkBase="/dashboard/alumno" />
+        <main className="flex-1 md:ml-64 p-md md:p-lg xl:p-xl w-full">
+          <div className="flex justify-center py-16"><LoadingSpinner /></div>
+        </main>
+      </div>
+    </>
+  );
 
+  const content = (() => {
   // Si reinscripción no está habilitada
   if (!reinConfig?.habilitada) {
     return (
@@ -198,7 +216,7 @@ export default function ReinscripcionAlumnoPage() {
   const docsSubidos = new Set((solicitud?.reinscripcion_documentos ?? []).map(d => d.nombre));
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 py-6 px-2 sm:px-0">
+    <div className="max-w-3xl mx-auto space-y-6 py-6 px-2 sm:px-0 w-full">
       {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reinscripción {cicloEscolar}</h1>
@@ -450,5 +468,18 @@ export default function ReinscripcionAlumnoPage() {
         </>
       )}
     </div>
+  );
+  })();
+
+  return (
+    <>
+      <DashboardTopbar userImageAlt="Estudiante" activeTopLink="dashboard" linkBase="/dashboard/alumno" />
+      <div className="flex flex-1 pt-16">
+        <DashboardSidebar activeLink="reinscripcion" headerVariant="simple" linkBase="/dashboard/alumno" />
+        <main className="flex-1 md:ml-64 p-md md:p-lg xl:p-xl w-full max-w-container-max mx-auto overflow-x-hidden">
+          {content}
+        </main>
+      </div>
+    </>
   );
 }
