@@ -378,7 +378,7 @@ export default function ReinscripcionAlumnoPage() {
                       )}
                       {docExistente && (
                         <a
-                          href={docExistente.url}
+                          href={`/api/storage/doc-view?url=${encodeURIComponent(docExistente.url)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -419,7 +419,7 @@ export default function ReinscripcionAlumnoPage() {
                   <li key={doc.id} className="px-6 py-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-800 dark:text-gray-200">{doc.nombre}</p>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                      <a href={`/api/storage/doc-view?url=${encodeURIComponent(doc.url)}`} target="_blank" rel="noopener noreferrer"
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                         Ver documento
                       </a>
