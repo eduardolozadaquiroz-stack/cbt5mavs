@@ -185,7 +185,7 @@ export default function GruposPage() {
 
           <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Grupos</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Gestión de Grupos</h2>
               <p className="text-sm text-slate-500 mt-0.5">{loading ? "Cargando..." : `${grupos.length} grupos registrados`}</p>
             </div>
             <button
@@ -247,7 +247,7 @@ export default function GruposPage() {
               <table className="w-full border-collapse min-w-[680px]">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    {["Nombre", "Carrera", "Semestre", "Turno", "Ciclo", "Estado"].map((h) => (
+                    {["Nombre", "Carrera", "Semestre", "Turno", "Ciclo", "Estado", "Acciones"].map((h) => (
                       <th key={h} className="px-4 py-2.5 text-left border-b border-slate-200 dark:border-slate-700">{h}</th>
                     ))}
                   </tr>
@@ -257,7 +257,7 @@ export default function GruposPage() {
                     <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">Cargando...</td></tr>
                   )}
                   {!loading && filtrados.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">No hay grupos registrados aún.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">No hay grupos registrados aún.</td></tr>
                   )}
                   {!loading && filtrados.map((g) => (
                     <tr key={g.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -275,13 +275,20 @@ export default function GruposPage() {
                           ? <span className="inline-flex px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs font-semibold">Activo</span>
                           : <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-xs font-semibold">Inactivo</span>
                         }
-                      </td>
-                    </tr>
+                      </td>                        <td className="px-4 py-2.5">
+                          <a
+                            href={`${BASE}/horarios?grupo=${g.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-700 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+                            Ver Horario
+                          </a>
+                        </td>                    </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500">
-                    <td colSpan={6} className="px-4 py-2 border-t border-slate-200 dark:border-slate-700">
+                    <td colSpan={7} className="px-4 py-2 border-t border-slate-200 dark:border-slate-700">
                       {loading ? "Cargando..." : `Mostrando ${filtrados.length} de ${grupos.length} grupos`}
                     </td>
                   </tr>
