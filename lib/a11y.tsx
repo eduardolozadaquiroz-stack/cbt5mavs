@@ -41,19 +41,6 @@ export function liveRegion(
   );
 }
 
-export const SKIP_LINK_ID = "main-content";
-
-export function SkipLink(): React.ReactElement {
-  return (
-    <a
-      href={`#${SKIP_LINK_ID}`}
-      className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-on-primary focus:rounded-lg"
-    >
-      Saltar al contenido principal
-    </a>
-  );
-}
-
 export function getAriaErrorMessage(id: string | undefined): Record<string, string> {
   return id ? { "aria-describedby": id, "aria-invalid": "true" } : {};
 }
