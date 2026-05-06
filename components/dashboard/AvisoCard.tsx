@@ -48,15 +48,10 @@ export default function AvisoCard({ aviso }: { aviso: Aviso }) {
   const needsExp = aviso.cuerpo.length > 280 ||
     (aviso.cuerpo.match(/\n/g)?.length ?? 0) >= 4;
 
-  // Cerrar lightbox o modal con Escape
+  // Cerrar modal con Escape (solo si no está el lightbox abierto)
   useEffect(() => {
-    if (!modal && lb === null) return;
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (lb !== null) setLb(null);
-        else setModal(false);
-      }
-    };
+    if (!modal || lb !== null) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setModal(false); };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
   }, [modal, lb]);

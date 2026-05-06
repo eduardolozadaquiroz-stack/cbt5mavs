@@ -8,7 +8,7 @@ export default function CareersList() {
   const { carreras } = config.carreras;
 
   return (
-    <div className="flex flex-col gap-10 lg:gap-14">
+    <div className="flex flex-col gap-xl">
       {carreras.map((carrera, idx) => (
         <CareerArticle
           key={carrera.id}

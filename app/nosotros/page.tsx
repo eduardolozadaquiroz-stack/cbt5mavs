@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 const valores = [
@@ -36,6 +37,7 @@ export default function NosotrosPage() {
 
   return (
     <>
+      <LoadingSpinner duration={3000} />
       <Navbar activePage="nosotros" />
       <main className="w-full font-public-sans">
 
