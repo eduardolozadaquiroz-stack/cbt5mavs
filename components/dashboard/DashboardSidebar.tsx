@@ -76,7 +76,7 @@ const navLinks: { id: ActiveLink; label: string; category?: string }[] = [
 
 export default function DashboardSidebar({
   activeLink,
-  headerVariant = "simple",
+  headerVariant: _headerVariant,
   linkBase,
   role,
 }: DashboardSidebarProps) {
@@ -143,41 +143,15 @@ export default function DashboardSidebar({
     <nav className="hidden md:flex flex-col fixed left-0 top-16 bottom-0 w-64 z-40 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800">
 
       {/* Header */}
-      {headerVariant === "simple" && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo CBT Núm. 5" className="h-12 w-auto object-contain flex-shrink-0" />
-          <div className="min-w-0">
-            <div className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</div>
-          </div>
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Logo CBT Núm. 5" className="h-12 w-auto object-contain flex-shrink-0" />
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</h2>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</p>
         </div>
-      )}
-
-      {headerVariant === "cbt-circle" && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo CBT Núm. 5" className="h-12 w-auto object-contain flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</p>
-          </div>
-        </div>
-      )}
-
-      {headerVariant === "school-icon" && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo CBT Núm. 5" className="h-12 w-auto object-contain flex-shrink-0" />
-          <div className="min-w-0">
-            <h2 className="text-sm font-black text-blue-900 dark:text-white leading-tight">CBT Núm. 5</h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Gestión Escolar</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">Ciclo {ciclo}</p>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Nav links */}
       <div className="flex-1 overflow-y-auto py-2">
@@ -199,6 +173,7 @@ export default function DashboardSidebar({
                   <a 
                     className={activeLink === link.id ? activeClass : inactiveClass} 
                     href={sidebarHref(link.id)}
+                    aria-current={activeLink === link.id ? "page" : undefined}
                   >
                     {icons[link.id]}
                     <span className="truncate">{link.label}</span>

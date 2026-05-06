@@ -70,15 +70,10 @@ html.dark nav.fixed .text-slate-500,
 html.dark nav.fixed .text-slate-600 { color: #7a9bb5 !important; }
 
 /* ── Topbar (header) ── */
-html.dark header {
-  background-color: #0f1e2e !important;
-  border-color: #1e3248 !important;
-}
 html.dark header .text-blue-800 { color: #7db8f7 !important; }
 html.dark header .text-slate-600 { color: #8aacca !important; }
 html.dark header .text-blue-700 { color: #60a5fa !important; }
 html.dark header .border-blue-700 { border-color: #60a5fa !important; }
-html.dark header .text-slate-600 { color: #8aacca !important; }
 html.dark header button .text-slate-600 { color: #8aacca !important; }
 
 /* ── Fondos (surfaces) ── */

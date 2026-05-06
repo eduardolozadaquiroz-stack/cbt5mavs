@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 
 type Role = "alumno" | "maestro" | "admin" | "padres";
@@ -81,8 +80,6 @@ export default function LoginPage() {
 
   return (
     <>
-      <LoadingSpinner duration={2000} />
-
       {/* Botón flotante de tema — esquina superior derecha */}
       <div className="fixed top-4 right-4 z-50">
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-full shadow-sm border border-outline-variant/30">
