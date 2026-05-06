@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { getBrowserClient } from "@/lib/supabase-browser";
+import { useRealtime } from "./useRealtime";
 
 export interface Aviso {
   id: string;
@@ -23,7 +22,6 @@ export interface Aviso {
   evento_enlace: string | null;
 }
 
-// Tipo del row crudo que devuelve Supabase Realtime (columnas DB)
 interface DbRow {
   id: string;
   titulo: string;
@@ -67,68 +65,39 @@ function mapDbRow(row: DbRow): Aviso {
 }
 
 export function useRealtimeAvisos(para?: "alumnos" | "maestros" | "padres") {
-  const [avisos, setAvisos] = useState<Aviso[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const destLabel = para
+    ? { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" }[para]
+    : null;
 
-  const fetchAvisos = useCallback(async () => {
-    try {
-      const url = `/api/avisos?limit=50${para ? `&para=${para}` : ""}`;
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Error al cargar avisos");
-      const json = await res.json();
-      setAvisos(json.avisos ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
-    } finally {
-      setLoading(false);
-    }
-  }, [para]);
+  const { data: avisos, loading, error, refetch } = useRealtime<Aviso>({
+    table: "avisos",
+    fetchUrl: `/api/avisos?limit=50${para ? `&para=${para}` : ""}`,
+    channelName: "public:avisos",
+    onEvent: (payload, _prevData, setData) => {
+      const destOk = (row: DbRow) =>
+        !para || row.destinatario === "Todos" || row.destinatario === destLabel;
 
-  useEffect(() => {
-    fetchAvisos();
-
-    const client = getBrowserClient();
-    const channel = client
-      .channel("public:avisos")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "avisos" },
-        (payload) => {
-          // Verificar que el destinatario coincide con el rol del cliente
-          const destLabel = para
-            ? { alumnos: "Alumnos", maestros: "Maestros", padres: "Padres" }[para]
-            : null;
-          const destOk = (row: DbRow) =>
-            !para || row.destinatario === "Todos" || row.destinatario === destLabel;
-
-          if (payload.eventType === "INSERT") {
-            const raw = payload.new as DbRow;
-            const mapped = mapDbRow(raw);
-            if (mapped.activo && destOk(raw)) {
-              setAvisos((prev) => [mapped, ...prev]);
-            }
-          } else if (payload.eventType === "UPDATE") {
-            const raw = payload.new as DbRow;
-            const mapped = mapDbRow(raw);
-            const canShow = mapped.activo && destOk(raw);
-            setAvisos((prev) =>
-              canShow
-                ? prev.map((a) => (a.id === mapped.id ? mapped : a))
-                : prev.filter((a) => a.id !== mapped.id)
-            );
-          } else if (payload.eventType === "DELETE") {
-            const deleted = payload.old as Partial<Aviso>;
-            setAvisos((prev) => prev.filter((a) => a.id !== deleted.id));
-          }
+      if (payload.eventType === "INSERT") {
+        const raw = payload.new as DbRow;
+        const mapped = mapDbRow(raw);
+        if (mapped.activo && destOk(raw)) {
+          setData((prev) => [mapped, ...prev]);
         }
-      )
-      .subscribe();
+      } else if (payload.eventType === "UPDATE") {
+        const raw = payload.new as DbRow;
+        const mapped = mapDbRow(raw);
+        const canShow = mapped.activo && destOk(raw);
+        setData((prev) =>
+          canShow
+            ? prev.map((a) => (a.id === mapped.id ? mapped : a))
+            : prev.filter((a) => a.id !== mapped.id)
+        );
+      } else if (payload.eventType === "DELETE") {
+        const deleted = payload.old as Partial<Aviso>;
+        setData((prev) => prev.filter((a) => a.id !== deleted.id));
+      }
+    },
+  });
 
-    return () => {
-      client.removeChannel(channel);
-    };
-  }, [fetchAvisos]);
-
-  return { avisos, loading, error, refetch: fetchAvisos };
+  return { avisos, loading, error, refetch };
 }

@@ -41,7 +41,7 @@ export default function HeroCarousel({ slides = DEFAULT_SLIDES }: HeroCarouselPr
 
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % slides.length);
-  }, []);
+  }, [slides.length]);
 
   const prev = () => setCurrent((c) => (c - 1 + slides.length) % slides.length);
 

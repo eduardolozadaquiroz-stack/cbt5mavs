@@ -100,7 +100,7 @@ export default function AsistenciasMaestroPage() {
         });
         setAsistencias(map);
       });
-  }, [materiaId, fecha, grupoId]);
+  }, [materiaId, fecha, grupoId, alumnos]);
 
   async function guardar() {
     if (!grupoId || !materiaId || !fecha) return;
