@@ -3,7 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { getBrowserClient } from "@/lib/supabase-browser";
 
-interface UseRealtimeOptions<T> {
+export interface RealtimeItem {
+  id: string;
+}
+
+interface UseRealtimeOptions<T extends RealtimeItem> {
   table: string;
   fetchUrl: string | (() => string);
   channelName: string;
@@ -11,7 +15,7 @@ interface UseRealtimeOptions<T> {
   onEvent?: (payload: any, prevData: T[], setData: React.Dispatch<React.SetStateAction<T[]>>) => void;
 }
 
-export function useRealtime<T>({
+export function useRealtime<T extends RealtimeItem>({
   table,
   fetchUrl,
   channelName,
@@ -59,11 +63,11 @@ export function useRealtime<T>({
             } else if (payload.eventType === "UPDATE") {
               const updated = payload.new as T;
               setData((prev) =>
-                prev.map((item) => (item.id === updated.id ? updated : item))
+                prev.map((item) => ((item as RealtimeItem).id === updated.id ? updated : item))
               );
             } else if (payload.eventType === "DELETE") {
-              const deleted = payload.old as Partial<T>;
-              setData((prev) => prev.filter((item) => item.id !== deleted.id));
+              const deleted = payload.old as Partial<RealtimeItem>;
+              setData((prev) => prev.filter((item) => (item as RealtimeItem).id !== deleted.id));
             }
           }
         }
