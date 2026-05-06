@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: "20"
+  NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key"
+  SUPABASE_SERVICE_ROLE_KEY: "test-service-key"
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: cbt-nextjs/package-lock.json
+      - name: Install dependencies
+        working-directory: cbt-nextjs
+        run: npm ci --legacy-peer-deps
+      - name: Run ESLint
+        working-directory: cbt-nextjs
+        run: npm run lint
+      - name: TypeScript type check
+        working-directory: cbt-nextjs
+        run: npx tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: cbt-nextjs/package-lock.json
+      - name: Install dependencies
+        working-directory: cbt-nextjs
+        run: npm ci --legacy-peer-deps
+      - name: Run tests
+        working-directory: cbt-nextjs
+        run: npx vitest run --coverage
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: cbt-nextjs/package-lock.json
+      - name: Install dependencies
+        working-directory: cbt-nextjs
+        run: npm ci --legacy-peer-deps
+      - name: Build Next.js
+        working-directory: cbt-nextjs
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}

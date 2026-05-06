@@ -1,0 +1,98 @@
+export type Locale = "es" | "en";
+
+export const defaultLocale: Locale = "es";
+export const locales: Locale[] = ["es", "en"];
+
+export const translations: Record<Locale, Record<string, string>> = {
+  es: {
+    "nav.inicio": "Inicio",
+    "nav.carreras": "Carreras",
+    "nav.admision": "Admisión",
+    "nav.avisos": "Avisos",
+    "nav.contacto": "Contacto",
+    "nav.login": "Iniciar Sesión",
+    "nav.dashboard": "Mi Portal",
+    "hero.title": "Centro de Bachillerato Tecnológico Núm. 5",
+    "hero.subtitle": "María Amparo Viderique de Shein — Chalco",
+    "hero.cta": "Conoce nuestras carreras",
+    "footer.derechos": "Todos los derechos reservados",
+    "footer.gobierno": "Gobierno del Estado de México",
+    "login.titulo": "Iniciar Sesión",
+    "login.email": "Correo electrónico o matrícula",
+    "login.password": "Contraseña",
+    "login.rol": "Selecciona tu rol",
+    "login.boton": "Entrar",
+    "login.olvide": "¿Olvidaste tu contraseña?",
+    "error.noAutorizado": "No autorizado",
+    "error.accesoDenegado": "Acceso denegado",
+    "error.servidor": "Error del servidor",
+    "loading.iniciando": "Iniciando...",
+    "common.cerrar": "Cerrar",
+    "common.guardar": "Guardar",
+    "common.cancelar": "Cancelar",
+    "common.eliminar": "Eliminar",
+    "common.editar": "Editar",
+    "common.buscar": "Buscar",
+    "common.pagina": "Página",
+    "common.de": "de",
+    "common.sinResultados": "Sin resultados",
+    "common.cargando": "Cargando...",
+    "common.error": "Ha ocurrido un error",
+    "common.reintentar": "Intentar de nuevo",
+    "roles.alumno": "Alumno",
+    "roles.maestro": "Maestro",
+    "roles.admin": "Administrador",
+    "roles.padres": "Padre/Tutor",
+  },
+  en: {
+    "nav.inicio": "Home",
+    "nav.carreras": "Programs",
+    "nav.admision": "Admissions",
+    "nav.avisos": "Notices",
+    "nav.contacto": "Contact",
+    "nav.login": "Sign In",
+    "nav.dashboard": "My Portal",
+    "hero.title": "Technological High School Center No. 5",
+    "hero.subtitle": "María Amparo Viderique de Shein — Chalco",
+    "hero.cta": "Explore our programs",
+    "footer.derechos": "All rights reserved",
+    "footer.gobierno": "State Government of Mexico",
+    "login.titulo": "Sign In",
+    "login.email": "Email or student ID",
+    "login.password": "Password",
+    "login.rol": "Select your role",
+    "login.boton": "Sign In",
+    "login.olvide": "Forgot your password?",
+    "error.noAutorizado": "Unauthorized",
+    "error.accesoDenegado": "Access denied",
+    "error.servidor": "Server error",
+    "loading.iniciando": "Loading...",
+    "common.cerrar": "Close",
+    "common.guardar": "Save",
+    "common.cancelar": "Cancel",
+    "common.eliminar": "Delete",
+    "common.editar": "Edit",
+    "common.buscar": "Search",
+    "common.pagina": "Page",
+    "common.de": "of",
+    "common.sinResultados": "No results",
+    "common.cargando": "Loading...",
+    "common.error": "An error occurred",
+    "common.reintentar": "Try again",
+    "roles.alumno": "Student",
+    "roles.maestro": "Teacher",
+    "roles.admin": "Administrator",
+    "roles.padres": "Parent/Guardian",
+  },
+};
+
+export function t(locale: Locale, key: string): string {
+  return translations[locale]?.[key] ?? translations.es[key] ?? key;
+}
+
+export function useTranslation(locale: Locale = defaultLocale) {
+  return {
+    t: (key: string) => t(locale, key),
+    locale,
+  };
+}

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   if (err) return err;
 
   // Rate limit por tutor (OWASP A07)
-  const rl = vinculacionLimiter.check(user.db_id);
+  const rl = await vinculacionLimiter.check(user.db_id);
   if (!rl.allowed) {
     await auditLog(user.db_id, "alumno_tutor", "VINCULACION_RATE_LIMITED", null, {});
     log.warn("Rate limit de vinculación alcanzado", { tutorId: user.db_id });

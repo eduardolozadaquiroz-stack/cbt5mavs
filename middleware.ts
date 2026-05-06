@@ -47,25 +47,21 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
     // A02 – Cryptographic Failures: forzar HTTPS
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     // A03 – Injection: Content Security Policy con nonce (sin unsafe-inline para scripts)
-    "Content-Security-Policy": [
-      "default-src 'self'",
-      // Nonce por request — elimina la necesidad de 'unsafe-inline' en scripts
-      // Next.js SSR hydration usa el nonce inyectado en el layout
-      `script-src 'self' 'nonce-${nonce}'`,
-      // Los estilos de Tailwind/Next.js aún requieren unsafe-inline (no hay nonce para CSS)
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https:",
-      // Videos y audio desde Supabase Storage
-      "media-src 'self' https://*.supabase.co",
-      // Solo conexiones a Supabase y mismo origen
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-      "frame-src https://www.google.com https://maps.google.com",
-      "frame-ancestors 'none'",     // bloquea clickjacking
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join("; "),
+      "Content-Security-Policy": [
+        "default-src 'self'",
+        `script-src 'self' 'nonce-${nonce}'`,
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' https://*.supabase.co",
+        "connect-src 'self' https://*.supabase.co https://*.sentry.io wss://*.supabase.co",
+        "frame-src https://www.google.com https://maps.google.com",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "report-uri /api/csp-report",
+      ].join("; "),
   };
 }
 

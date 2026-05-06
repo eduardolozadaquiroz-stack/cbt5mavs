@@ -11,36 +11,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase-server";
 import { loginLimiter } from "@/lib/rate-limit";
 import { createLogger } from "@/lib/logger";
+import { loginSchema } from "@/lib/schemas";
 
 const log = createLogger("api/auth/login");
 
 // ── Helper: obtener IP real del CDN de confianza ─────────────────────────────
-// Orden de prioridad: Cloudflare → Vercel → x-forwarded-for → x-real-ip
-// Estos headers son sobrescritos por el CDN y no pueden ser falsificados
-// por el cliente si el tráfico siempre pasa por el CDN.
 function getClientIp(request: NextRequest): string {
   return (
-    request.headers.get("cf-connecting-ip") ??          // Cloudflare (más confiable)
-    request.headers.get("x-vercel-forwarded-for") ??    // Vercel
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-vercel-forwarded-for") ??
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     request.headers.get("x-real-ip") ??
     "unknown"
   );
 }
 
-// ── Validación de inputs ─────────────────────────────────────────────────────
-function sanitizeString(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.trim().slice(0, 254).replace(/[\x00-\x1F\x7F]/g, "");
-}
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
 
   // ── Rate limiting (OWASP A07) ──────────────────────────────────────────────
-  const rl = loginLimiter.check(ip);
+  const rl = await loginLimiter.check(ip);
   if (!rl.allowed) {
     const retryMin = Math.ceil(rl.retryAfterMs / 60_000);
     log.warn("Rate limit alcanzado", { ip: ip.slice(0, 7) + "***" });
@@ -50,14 +40,14 @@ export async function POST(request: NextRequest) {
         status: 429,
         headers: {
           "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)),
-          "X-RateLimit-Limit":     "5",
+          "X-RateLimit-Limit": "5",
           "X-RateLimit-Remaining": "0",
         },
       }
     );
   }
 
-  // ── Parsear y validar body ─────────────────────────────────────────────────
+  // ── Parsear y validar body con Zod ─────────────────────────────────────────
   let body: unknown;
   try {
     body = await request.json();
@@ -65,32 +55,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cuerpo de solicitud inválido" }, { status: 400 });
   }
 
-  if (typeof body !== "object" || body === null) {
-    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos", details: parsed.error.flatten() },
+      { status: 400 }
+    );
   }
 
-  const raw = body as Record<string, unknown>;
-  // Acepta "identifier" (puede ser email o matrícula de alumno) o "email" directo
-  const identifier = sanitizeString(raw.identifier ?? raw.email);
-  const password   = typeof raw.password === "string" ? raw.password.slice(0, 128) : "";
-  const rol        = sanitizeString(raw.rol);
-
-  const VALID_ROLES = ["alumno", "maestro", "admin", "padres"];
-
-  if (!identifier || identifier.length < 3) {
-    return NextResponse.json({ error: "Identificador inválido" }, { status: 400 });
-  }
-  if (password.length < 6) {
-    return NextResponse.json({ error: "Contraseña inválida" }, { status: 400 });
-  }
-  if (!VALID_ROLES.includes(rol)) {
-    return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
-  }
+  const { identifier, password, rol } = parsed.data;
 
   // Si es matrícula (solo dígitos) y rol alumno → buscar email en DB
   let email = identifier;
   if (rol === "alumno" && /^\d+$/.test(identifier)) {
-    // Usar admin client para bypassear RLS (el usuario aún no está autenticado)
     const adminDb = createSupabaseAdminClient();
     const resolved = await adminDb
       .from("alumnos")
@@ -99,9 +76,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (resolved.error || !resolved.data) {
-      // No revelar si la matrícula existe (OWASP A07)
-      const rlFail = loginLimiter.check(ip); // ya incrementó, solo leemos remaining
-      log.warn("Matrícula no encontrada en login", { remaining: rlFail.remaining });
+      log.warn("Matrícula no encontrada en login", { ip: ip.slice(0, 7) + "***" });
       return NextResponse.json(
         { error: "Correo o contraseña incorrectos." },
         { status: 401 }
@@ -111,7 +86,8 @@ export async function POST(request: NextRequest) {
     email = usr?.email ?? identifier;
   }
 
-  if (!EMAIL_REGEX.test(email)) {
+  // Validar email con regex estándar
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return NextResponse.json({ error: "Correo electrónico inválido" }, { status: 400 });
   }
 
@@ -122,10 +98,7 @@ export async function POST(request: NextRequest) {
     await supabase.auth.signInWithPassword({ email, password });
 
   if (authError || !authData.user) {
-    // Registrar intento fallido — check() ya incrementó el contador anterior,
-    // hacemos un segundo check para actualizar el remaining visible.
-    const rlFail = loginLimiter.check(ip);
-    // Mensaje genérico — no revelar si el email existe (OWASP A07)
+    const rlFail = await loginLimiter.check(ip);
     const msg =
       rlFail.remaining <= 0
         ? "Cuenta bloqueada temporalmente por intentos fallidos."
@@ -184,7 +157,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Éxito: limpiar rate limit ──────────────────────────────────────────────
-  loginLimiter.reset(ip);
+  await loginLimiter.reset(ip);
   log.info("Login exitoso", { rol: dbUser.rol, primer_acceso: dbUser.primer_acceso });
 
   // Si es primer acceso → forzar cambio de contraseña

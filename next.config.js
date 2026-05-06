@@ -1,29 +1,44 @@
+import { withSentryConfig } from "@sentry/nextjs";
+import path from "path";
+
 /** @type {import('next').NextConfig} */
-const path = require("path");
-
 const nextConfig = {
-  // Ocultar el header "x-powered-by: Next.js" (información de servidor)
-  // OWASP A05 – Security Misconfiguration
   poweredByHeader: false,
-
-  // No generar source maps en producción (protege código fuente)
-  productionBrowserSourceMaps: false,
-
-  // Omitir ESLint durante el build de producción (se corre por separado en CI)
+  productionBrowserSourceMaps: true,
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
-
-  // Omitir errores de TypeScript durante el build de producción
   typescript: {
     ignoreBuildErrors: false,
   },
-
-  // Alias @/ explícito para que webpack lo resuelva en cualquier entorno (Render, Linux)
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.in",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   webpack(config) {
     config.resolve.alias["@"] = path.resolve(__dirname);
     return config;
   },
 };
 
-module.exports = nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG ?? "",
+  project: process.env.SENTRY_PROJECT ?? "",
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});
