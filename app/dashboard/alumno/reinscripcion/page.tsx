@@ -355,7 +355,7 @@ export default function ReinscripcionAlumnoPage() {
                         <FileUploadInput
                           currentUrl=""
                           label={`Subir ${nombre}`}
-                          bucket="avisos"
+                          bucket="documentos"
                           folder={`reinscripcion/solicitudes/${solicitud.id}`}
                           accept=".pdf,.jpg,.jpeg,.png"
                           onUploaded={(url) => subirDocumento(nombre, url)}
@@ -369,7 +369,7 @@ export default function ReinscripcionAlumnoPage() {
                           <FileUploadInput
                             currentUrl=""
                             label={`Resubir ${nombre}`}
-                            bucket="avisos"
+                            bucket="documentos"
                             folder={`reinscripcion/solicitudes/${solicitud.id}`}
                             accept=".pdf,.jpg,.jpeg,.png"
                             onUploaded={(url) => subirDocumento(nombre, url)}
@@ -400,7 +400,7 @@ export default function ReinscripcionAlumnoPage() {
               <FileUploadInput
                 currentUrl=""
                 label="Agregar documento"
-                bucket="avisos"
+                bucket="documentos"
                 folder={`reinscripcion/solicitudes/${solicitud.id}`}
                 accept=".pdf,.jpg,.jpeg,.png"
                 onUploaded={(url) => subirDocumento("Documento", url)}
