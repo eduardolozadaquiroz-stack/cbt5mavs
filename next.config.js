@@ -1,5 +1,8 @@
 import { withSentryConfig } from "@sentry/nextjs";
-import path from "path";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -28,7 +31,7 @@ const nextConfig = {
     ],
   },
   webpack(config) {
-    config.resolve.alias["@"] = path.resolve(__dirname);
+    config.resolve.alias["@"] = __dirname;
     return config;
   },
 };
@@ -38,7 +41,5 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT ?? "",
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-  automaticVercelMonitors: false,
+  tunnelRoute: "/monitoring-tunnel",
 });

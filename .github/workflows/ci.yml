@@ -22,15 +22,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: cbt-nextjs/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        working-directory: cbt-nextjs
         run: npm ci --legacy-peer-deps
       - name: Run ESLint
-        working-directory: cbt-nextjs
         run: npm run lint
       - name: TypeScript type check
-        working-directory: cbt-nextjs
         run: npx tsc --noEmit
 
   test:
@@ -42,12 +39,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: cbt-nextjs/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        working-directory: cbt-nextjs
         run: npm ci --legacy-peer-deps
       - name: Run tests
-        working-directory: cbt-nextjs
         run: npx vitest run --coverage
 
   build:
@@ -60,12 +55,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: cbt-nextjs/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        working-directory: cbt-nextjs
         run: npm ci --legacy-peer-deps
       - name: Build Next.js
-        working-directory: cbt-nextjs
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
