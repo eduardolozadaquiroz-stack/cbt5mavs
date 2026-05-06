@@ -115,10 +115,18 @@ export async function PATCH(
     // Asignar nuevo grupo si se proporcionó uno
     const nuevoGrupo = body.grupo_id as string | null;
     if (nuevoGrupo && isUUID(nuevoGrupo)) {
-      await admin.from("alumno_grupo").upsert(
-        { alumno_id: id, grupo_id: nuevoGrupo, activo: true },
-        { onConflict: "alumno_id,grupo_id" }
-      );
+      // alumno_grupo requiere ciclo_id NOT NULL → usar el ciclo activo
+      const { data: cicloActivo } = await admin
+        .from("ciclos_escolares")
+        .select("id")
+        .eq("activo", true)
+        .maybeSingle();
+      if (cicloActivo?.id) {
+        await admin.from("alumno_grupo").upsert(
+          { alumno_id: id, grupo_id: nuevoGrupo, ciclo_id: cicloActivo.id, activo: true },
+          { onConflict: "alumno_id,grupo_id,ciclo_id" }
+        );
+      }
     }
   }
 

@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
 
   const { data, error } = await admin
     .from("usuarios")
-    .select("id, nombre, correo:email, rol, telefono, foto_url, activo, created_at")
+    .select("id, nombre, apellido_paterno, apellido_materno, correo:email, rol, telefono, foto_url, activo, created_at")
     .eq("id", user.db_id)
     .single();
 

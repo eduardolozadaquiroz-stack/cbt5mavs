@@ -6,6 +6,8 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 interface PerfilData {
   id: number;
   nombre: string;
+  apellido_paterno: string | null;
+  apellido_materno: string | null;
   correo: string;
   rol: string;
   telefono: string | null;
@@ -68,7 +70,8 @@ export default function PerfilAlumnoPage() {
     } finally { setSaving(false); }
   }
 
-  const initials = (perfil?.nombre ?? "A").split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+  const nombreCompleto = [perfil?.apellido_paterno, perfil?.apellido_materno, perfil?.nombre].filter(Boolean).join(" ") || perfil?.nombre || "A";
+  const initials = nombreCompleto.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
   const inputBase = "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
   const labelBase = "text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-1";
 
@@ -104,7 +107,7 @@ export default function PerfilAlumnoPage() {
                       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
                     </div>
                     <div className="pb-2 pt-10 sm:pt-0">
-                      <h3 className="font-title-sm text-title-sm text-on-surface">{perfil.nombre}</h3>
+                      <h3 className="font-title-sm text-title-sm text-on-surface">{nombreCompleto}</h3>
                       <p className="text-xs text-on-surface-variant">
                         {perfil.alumno?.matricula ? `Matrícula: ${perfil.alumno.matricula}` : ""}
                         {perfil.alumno?.carrera?.nombre ? ` · ${perfil.alumno.carrera.nombre}` : ""}
