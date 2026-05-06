@@ -33,7 +33,7 @@ const BUCKET_CONFIG: Record<
   documentos: {
     maxBytes: 10 * 1024 * 1024, // 10 MB
     allowedMimes: ["application/pdf", "image/jpeg", "image/jpg", "image/png"],
-    roles: ["admin"],
+    roles: ["admin", "alumno"],
   },
   avisos: {
     maxBytes: 50 * 1024 * 1024, // 50 MB (cubre videos medianos)
