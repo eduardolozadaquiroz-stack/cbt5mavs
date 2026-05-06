@@ -12,11 +12,14 @@ export async function GET() {
 
   const admin = createSupabaseAdminClient();
 
-  // Obtener ciclo activo
+  // Obtener ciclo activo y config
   const { data: cfg } = await admin.from("site_config").select("config").eq("id", 1).single();
   const reinConfig = ((cfg?.config as Record<string, unknown>)?.reinscripcion as Record<string, unknown>) ?? {};
-  const cicloEscolar = reinConfig.cicloEscolar as string ?? "";
-  const habilitada   = reinConfig.habilitada   as boolean ?? false;
+  const habilitada   = reinConfig.habilitada as boolean ?? false;
+
+  // Usar ciclos_escolares como fuente canónica (igual que el alumno al crear la solicitud)
+  const { data: cicloActivo } = await admin.from("ciclos_escolares").select("nombre").eq("activo", true).maybeSingle();
+  const cicloEscolar: string = cicloActivo?.nombre ?? (reinConfig.cicloEscolar as string) ?? "";
 
   // Obtener alumnos vinculados
   const { data: vinculos } = await admin
