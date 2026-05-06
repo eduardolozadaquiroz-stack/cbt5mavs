@@ -1,4 +1,3 @@
-import { withSentryConfig } from "@sentry/nextjs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -7,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: false,
   eslint: {
     ignoreDuringBuilds: false,
   },
@@ -36,10 +35,4 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG ?? "",
-  project: process.env.SENTRY_PROJECT ?? "",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  tunnelRoute: "/monitoring-tunnel",
-});
+export default nextConfig;
