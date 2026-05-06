@@ -130,7 +130,10 @@ export async function PATCH(
   }
 
   const { error } = await admin.from("avisos").update(updates).eq("id", id);
-  if (error) return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+  if (error) {
+    console.error("[PATCH /api/avisos] Supabase error:", error.code, error.message);
+    return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
