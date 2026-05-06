@@ -58,6 +58,7 @@ export default function DashboardTopbar({
   const [displayRole, setDisplayRole]     = useState(userRole);
   const [displayImage, setDisplayImage]   = useState(userImageSrc);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery]     = useState("");
 
   const handleLogout = useCallback(async () => {
     try {
@@ -239,9 +240,17 @@ export default function DashboardTopbar({
           <div className="hidden md:flex relative text-slate-500 dark:text-slate-400">
             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"><IconSearch /></span>
             <input
-              className="pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 w-44 lg:w-52 transition-all"
-              placeholder="Buscar..."
+              className="pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 w-44 lg:w-56 transition-all"
+              placeholder="Buscar usuarios, avisos..."
               type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && searchQuery.trim() && linkBase) {
+                  const base = linkBase.replace(/\/$/, "");
+                  window.location.href = `${base}/usuarios?q=${encodeURIComponent(searchQuery.trim())}`;
+                }
+              }}
             />
           </div>
         )}

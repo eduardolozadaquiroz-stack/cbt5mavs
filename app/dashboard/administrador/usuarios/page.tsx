@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 interface Carrera { id: string; nombre: string; clave: string; }
@@ -986,7 +987,8 @@ function ModalVincularAlumno({ tutor, onClose }: {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function UsuariosPage() {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [filtroRol, setFiltroRol] = useState<Rol>("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState<ApiUsuario | null>(null);

@@ -54,18 +54,28 @@ function pdfName(url: string): string {
   try { return decodeURIComponent(url.split("/").pop() ?? "documento.pdf"); } catch { return "documento.pdf"; }
 }
 
-export default function AvisosGrid() {
+export default function AvisosGrid({ tipo = "", page = 1, onTotal }: {
+  tipo?: string;
+  page?: number;
+  onTotal?: (total: number) => void;
+}) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/avisos?limit=6")
+    setLoading(true);
+    const params = new URLSearchParams({ limit: "6", page: String(page) });
+    if (tipo) params.set("tipo", tipo);
+    fetch(`/api/avisos?${params}`)
       .then((r) => r.json())
-      .then((d) => setAvisos(d.avisos ?? []))
+      .then((d) => {
+        setAvisos(d.avisos ?? []);
+        onTotal?.(d.total ?? 0);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [tipo, page, onTotal]);
 
   if (loading) {
     return (
