@@ -89,6 +89,25 @@ const GUIA: Paso[] = [
   },
   {
     num: 5,
+    titulo: "Catálogo de Materias",
+    icono: "📘",
+    color: "indigo",
+    descripcion: "Configura el catálogo de materias antes de asignarlas a grupos. Cada materia tiene clave única, semestre, créditos y tipo. Las materias de Tronco Común aplican a todas las carreras; las específicas solo a una.",
+    pasos: [
+      'Ve al menú lateral → "Catálogo de Materias".',
+      'Haz clic en "Nueva Materia" (botón azul arriba a la derecha).',
+      'Ingresa el nombre, clave única (ej: INFO-101), semestre (1° al 6°) y créditos.',
+      'Selecciona el tipo: Tronco Común (todas las carreras), Específica (una carrera) o Extracurricular.',
+      'Si la materia es específica, selecciona la carrera correspondiente.',
+      'Haz clic en "Crear Materia". Aparecerá en la lista.',
+      'Repite para todas las materias del plan de estudios.',
+      'Puedes editar cualquier materia con el botón "Editar" y desactivarla si ya no se imparte.',
+    ],
+    nota: "Las materias desactivadas no aparecen al asignar a grupos nuevos, pero conservan el historial de calificaciones existente.",
+    enlace: { href: `${BASE}/materias`, label: "Ir a Catálogo de Materias" },
+  },
+  {
+    num: 6,
     titulo: "Asignar Materias a Grupos",
     icono: "📖",
     color: "emerald",
@@ -106,7 +125,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/grupos`, label: "Ir a Grupos" },
   },
   {
-    num: 6,
+    num: 7,
     titulo: "Registrar Alumnos",
     icono: "🎓",
     color: "sky",
@@ -123,7 +142,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/usuarios`, label: "Ir a Usuarios" },
   },
   {
-    num: 7,
+    num: 8,
     titulo: "Registrar Padres de Familia",
     icono: "👨‍👩‍👧",
     color: "teal",
@@ -140,7 +159,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/usuarios`, label: "Ir a Usuarios" },
   },
   {
-    num: 8,
+    num: 9,
     titulo: "Configurar Reinscripción",
     icono: "📋",
     color: "violet",
@@ -158,7 +177,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/reinscripcion`, label: "Ir a Reinscripción" },
   },
   {
-    num: 9,
+    num: 10,
     titulo: "Gestionar Horarios",
     icono: "🕐",
     color: "amber",
@@ -174,7 +193,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/horarios`, label: "Ir a Horarios" },
   },
   {
-    num: 10,
+    num: 11,
     titulo: "Publicar Avisos",
     icono: "📢",
     color: "red",
@@ -203,6 +222,7 @@ const colorMap: Record<string, { bg: string; border: string; badge: string; btn:
   amber:   { bg: "bg-amber-50 dark:bg-amber-950/20",   border: "border-amber-200 dark:border-amber-800",   badge: "bg-amber-600 text-white",   btn: "bg-amber-600 hover:bg-amber-700 text-white" },
   red:     { bg: "bg-red-50 dark:bg-red-950/20",        border: "border-red-200 dark:border-red-800",        badge: "bg-red-700 text-white",     btn: "bg-red-700 hover:bg-red-800 text-white" },
   emerald: { bg: "bg-emerald-50 dark:bg-emerald-950/20", border: "border-emerald-200 dark:border-emerald-800", badge: "bg-emerald-700 text-white", btn: "bg-emerald-700 hover:bg-emerald-800 text-white" },
+  indigo:  { bg: "bg-indigo-50 dark:bg-indigo-950/20",   border: "border-indigo-200 dark:border-indigo-800",   badge: "bg-indigo-700 text-white",  btn: "bg-indigo-700 hover:bg-indigo-800 text-white" },
 };
 
 export default function TutorialPage() {
