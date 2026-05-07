@@ -70,7 +70,7 @@ export default function PerfilAlumnoPage() {
     } finally { setSaving(false); }
   }
 
-  const nombreCompleto = [perfil?.apellido_paterno, perfil?.apellido_materno, perfil?.nombre].filter(Boolean).join(" ") || perfil?.nombre || "A";
+  const nombreCompleto = [perfil?.nombre, perfil?.apellido_paterno, perfil?.apellido_materno].filter(Boolean).join(" ") || perfil?.nombre || "A";
   const initials = nombreCompleto.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
   const inputBase = "w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors";
   const labelBase = "text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-1";

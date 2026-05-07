@@ -151,6 +151,18 @@ export async function POST(request: NextRequest) {
       resultados.push({ email, ok: true, contrasena_temp });
       log.info("Usuario importado", { email, rol });
 
+      // Enviar correo de bienvenida/activación al usuario recién creado
+      // Recibe enlace para establecer su propia contraseña
+      try {
+        const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${origin}/auth/reset-password`,
+        });
+      } catch {
+        // No fallar la importación si el correo no se pudo enviar
+        log.info("Correo de bienvenida no enviado (SMTP no configurado?)", { email });
+      }
+
     } catch (err) {
       resultados.push({ email, ok: false, error: String(err) });
     }

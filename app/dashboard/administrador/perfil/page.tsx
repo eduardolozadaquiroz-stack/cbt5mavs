@@ -10,6 +10,8 @@ const BASE = "/dashboard/administrador";
 interface PerfilData {
   id: number;
   nombre: string;
+  apellido_paterno: string | null;
+  apellido_materno: string | null;
   correo: string;
   rol: string;
   telefono: string | null;
@@ -101,7 +103,8 @@ export default function PerfilPage() {
     }
   }
 
-  const initials = (perfil?.nombre ?? "U")
+  const nombreCompleto = [perfil?.nombre, perfil?.apellido_paterno, perfil?.apellido_materno].filter(Boolean).join(" ") || perfil?.nombre || "U";
+  const initials = nombreCompleto
     .split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
   const inputBase =
@@ -140,7 +143,7 @@ export default function PerfilPage() {
                     </div>
                   )}
                   <div className="text-center">
-                    <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{perfil?.nombre}</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{nombreCompleto}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 capitalize">{perfil?.rol}</p>
                   </div>
                   <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />

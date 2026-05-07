@@ -119,15 +119,15 @@ export default function DashboardSidebar({
       { id: "tutorial",         label: "Guía de uso" },
     ];
   } else if (detectedRole === "alumno") {
-    // Alumnos ven los links básicos sin usuarios, audit-log ni edición de contenido
+    // Alumnos ven los links básicos sin usuarios, audit-log, materias ni edición de contenido
     // Añade "reinscripcion" explícitamente (ya que category contenido lo excluiría)
     visibleLinks = [
-      ...navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.category !== "contenido"),
+      ...navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.id !== "materias" && l.category !== "contenido"),
       { id: "reinscripcion", label: "Reinscripción" },
     ];
   } else if (detectedRole === "maestro") {
-    // Maestros ven los links sin usuarios ni audit-log ni edición de contenido
-    visibleLinks = navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.category !== "contenido");
+    // Maestros ven los links sin usuarios, audit-log, materias ni edición de contenido
+    visibleLinks = navLinks.filter((l) => l.id !== "usuarios" && l.id !== "audit-log" && l.id !== "materias" && l.category !== "contenido");
   } else {
     // Admin ve todos
     visibleLinks = navLinks;

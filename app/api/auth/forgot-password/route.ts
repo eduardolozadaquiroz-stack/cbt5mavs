@@ -78,17 +78,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Usar Supabase Admin para enviar el email de reset (bypasa RLS)
+  // Enviar email de reset con el método estándar (usa SMTP configurado en Supabase)
+  // resetPasswordForEmail SÍ envía el correo; generateLink solo genera el token sin enviarlo.
   const admin = createSupabaseAdminClient();
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
   const redirectTo = `${origin}/auth/reset-password`;
 
   // No propagamos el error (OWASP A07 — no revelar si el email existe)
-  await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo },
-  });
+  await admin.auth.resetPasswordForEmail(email, { redirectTo });
 
   return NextResponse.json({ ok: true });
 }

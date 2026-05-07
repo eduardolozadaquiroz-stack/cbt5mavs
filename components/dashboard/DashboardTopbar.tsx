@@ -81,7 +81,11 @@ export default function DashboardTopbar({
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
-        if (data.nombre) setDisplayName(data.nombre);
+        // Construir nombre completo con apellidos
+        const fullName = [data.nombre, data.apellido_paterno, data.apellido_materno]
+          .filter(Boolean).join(" ");
+        if (fullName) setDisplayName(fullName);
+        else if (data.nombre) setDisplayName(data.nombre);
         if (data.rol) {
           // Si el rol real no coincide con el dashboard actual → redirigir al login
           if (expectedRol && data.rol !== expectedRol) {
