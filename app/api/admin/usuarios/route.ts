@@ -193,5 +193,15 @@ export async function POST(request: NextRequest) {
   // A09 – Audit log: creación de cuentas es evento crítico
   await auditLog(adminUser.db_id, "usuarios", "INSERT", dbUser.id, { rol, correo });
 
+  // Enviar correo de bienvenida/activación para que el usuario establezca su contraseña
+  try {
+    const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+    await admin.auth.resetPasswordForEmail(correo, {
+      redirectTo: `${origin}/auth/reset-password`,
+    });
+  } catch {
+    // No fallar la creación si el correo no se pudo enviar
+  }
+
   return NextResponse.json({ ok: true, id: dbUser.id }, { status: 201 });
 }
