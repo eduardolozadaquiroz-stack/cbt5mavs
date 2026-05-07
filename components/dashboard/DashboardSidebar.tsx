@@ -108,7 +108,7 @@ export default function DashboardSidebar({
   let visibleLinks: { id: ActiveLink; label: string; category?: string }[] = [];
 
   if (detectedRole === "padres") {
-    // Padres solo ven: inicio, calificaciones, asistencias, horarios, avisos, reinscripcion
+    // Padres solo ven: inicio, calificaciones, asistencias, horarios, avisos, reinscripcion, tutorial
     visibleLinks = [
       { id: "inicio",           label: "Inicio" },
       { id: "calificaciones",   label: "Calificaciones" },
@@ -116,6 +116,7 @@ export default function DashboardSidebar({
       { id: "horarios",         label: "Horarios" },
       { id: "avisos",           label: "Avisos" },
       { id: "reinscripcion",    label: "Reinscripción" },
+      { id: "tutorial",         label: "Guía de uso" },
     ];
   } else if (detectedRole === "alumno") {
     // Alumnos ven los links básicos sin usuarios, audit-log ni edición de contenido
