@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import SavedToast from "@/components/SavedToast";
 interface Carrera { id: string; nombre: string; clave: string; }
 interface Grupo   { id: string; nombre: string; semestre: number; turno: string; }
 
@@ -186,7 +187,7 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
           <h2 className="font-semibold text-on-surface text-base">
-            {step === "form" ? "Nuevo Usuario" : saving ? "Guardando…" : "Verificar Correo Electrónico"}
+            {step === "form" ? "Nuevo Usuario" : saving ? "Guardando…" : "Confirmar correo electrónico"}
           </h2>
           <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -498,15 +499,15 @@ function NuevoUsuarioModal({ onClose, onCreated }: {
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-on-surface text-base">Correo de verificación enviado</h3>
+              <h3 className="font-semibold text-on-surface text-base">Confirmar correo de acceso</h3>
               <p className="text-sm text-on-surface-variant mt-1">
-                Se envió un enlace de verificación a:
+                Se enviará un enlace de acceso a:
               </p>
               <p className="text-sm font-semibold text-primary mt-0.5 break-all">{pendingEmail}</p>
             </div>
             <div className="w-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-left text-sm text-amber-800 dark:text-amber-200">
               <p className="font-semibold mb-1">⚠ Cuenta pendiente de activación</p>
-              <p>El usuario aparecerá como <strong>Inactivo</strong> hasta que verifique su correo y confirme su contraseña haciendo clic en el enlace enviado.</p>
+              <p>El usuario recibirá un enlace para confirmar su acceso y establecer su contraseña.</p>
             </div>
             <ul className="w-full text-left space-y-1.5 text-sm text-on-surface-variant">
               <li className="flex items-start gap-2">
@@ -997,6 +998,17 @@ export default function UsuariosPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" }>({
+    visible: false,
+    message: "",
+    type: "success",
+  });
+
+  function showToast(message: string, type: "success" | "error" = "success") {
+    setToast({ visible: true, message, type });
+    window.setTimeout(() => setToast((current) => ({ ...current, visible: false })), 3200);
+  }
 
   async function cargarUsuarios() {
     setLoading(true);
@@ -1018,6 +1030,24 @@ export default function UsuariosPage() {
   }
 
   useEffect(() => { cargarUsuarios(); }, [filtroRol]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function reenviarCorreo(usuario: ApiUsuario) {
+    setSendingEmailId(usuario.id);
+    try {
+      const res = await fetch("/api/admin/usuarios/reenviar-correo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo: usuario.correo }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "No se pudo reenviar el correo.");
+      showToast("Correo enviado correctamente.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "No se pudo reenviar el correo.", "error");
+    } finally {
+      setSendingEmailId(null);
+    }
+  }
 
   const filtrados = usuarios.filter((u) => {
     const q = query.toLowerCase();
@@ -1139,6 +1169,23 @@ export default function UsuariosPage() {
                           </button>
                         )}
                         <button
+                          onClick={() => reenviarCorreo(u)}
+                          disabled={sendingEmailId === u.id}
+                          className="text-on-surface-variant hover:text-blue-600 disabled:opacity-50 disabled:cursor-wait p-1 rounded mr-1"
+                          title="Reenviar correo de acceso"
+                        >
+                          {sendingEmailId === u.id ? (
+                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                          )}
+                        </button>
+                        <button
                           onClick={() => setEditando(u)}
                           className="text-on-surface-variant hover:text-primary p-1 rounded" title="Editar"
                         >
@@ -1182,6 +1229,8 @@ export default function UsuariosPage() {
           onClose={() => setVinculando(null)}
         />
       )}
+
+      <SavedToast visible={toast.visible} message={toast.message} type={toast.type} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * POST /api/auth/forgot-password
  * Inicia el flujo de recuperación de contraseña.
- * Envía un email con enlace de reset generado por Supabase Auth.
+ * Genera el enlace con Supabase Auth y envía el email desde el proyecto.
  *
  * Seguridad:
  * - Respuesta genérica (no revela si el email existe — OWASP A07)
@@ -10,6 +10,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
+import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
 // ── Rate limiter simple ───────────────────────────────────────────────────────
 const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -78,14 +79,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Enviar email de reset con el método estándar (usa SMTP configurado en Supabase)
-  // resetPasswordForEmail SÍ envía el correo; generateLink solo genera el token sin enviarlo.
+  // generateLink solo genera el token; el envío lo hace el proyecto.
   const admin = createSupabaseAdminClient();
-  const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const redirectTo = `${origin}/auth/reset-password`;
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? request.nextUrl.origin;
+  const redirectTo = `${origin.replace(/\/$/, "")}/auth/reset-password`;
 
-  // No propagamos el error (OWASP A07 — no revelar si el email existe)
-  await admin.auth.resetPasswordForEmail(email, { redirectTo });
+  try {
+    const actionUrl = await generatePasswordRecoveryLink(admin, email, redirectTo);
+    await sendAuthEmail({
+      to: email,
+      actionUrl,
+      kind: "password-reset",
+    });
+  } catch {
+    // No propagamos el error (OWASP A07 — no revelar si el email existe)
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -6,3 +6,5 @@ assets = { directory = ".open-next/assets" }
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
 # SUPABASE_SERVICE_ROLE_KEY se sube como secret vía: wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# SMTP_USER / SMTP_PASS se suben como secrets vía wrangler secret put
+# EMAIL_FROM / EMAIL_REPLY_TO pueden subirse como secrets o variables en Cloudflare

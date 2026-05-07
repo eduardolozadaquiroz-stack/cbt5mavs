@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole, auditLog } from "@/lib/auth";
 import { sanitize, isEmail } from "@/lib/validate";
+import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
 const ROLES_VALIDOS = ["alumno", "maestro", "admin", "padres"];
 
@@ -193,14 +194,21 @@ export async function POST(request: NextRequest) {
   // A09 – Audit log: creación de cuentas es evento crítico
   await auditLog(adminUser.db_id, "usuarios", "INSERT", dbUser.id, { rol, correo });
 
-  // Enviar correo de bienvenida/activación para que el usuario establezca su contraseña
+  // Generar el enlace con Supabase Auth, pero enviar el correo desde el proyecto.
   try {
-    const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-    await admin.auth.resetPasswordForEmail(correo, {
-      redirectTo: `${origin}/auth/reset-password`,
+    const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? request.nextUrl.origin;
+    const redirectTo = `${origin.replace(/\/$/, "")}/auth/reset-password`;
+    const actionUrl = await generatePasswordRecoveryLink(admin, correo, redirectTo);
+
+    await sendAuthEmail({
+      to: correo,
+      actionUrl,
+      kind: "welcome",
+      name: nombre,
     });
-  } catch {
+  } catch (emailError) {
     // No fallar la creación si el correo no se pudo enviar
+    console.error("[usuarios POST] email error:", emailError);
   }
 
   return NextResponse.json({ ok: true, id: dbUser.id }, { status: 201 });

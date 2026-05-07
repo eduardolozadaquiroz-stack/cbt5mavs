@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createLogger } from "@/lib/logger";
+import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
 const log = createLogger("api/admin/importar-usuarios");
 
@@ -151,16 +152,21 @@ export async function POST(request: NextRequest) {
       resultados.push({ email, ok: true, contrasena_temp });
       log.info("Usuario importado", { email, rol });
 
-      // Enviar correo de bienvenida/activación al usuario recién creado
-      // Recibe enlace para establecer su propia contraseña
+      // Generar el enlace con Supabase Auth, pero enviar el correo desde el proyecto.
       try {
-        const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-        await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${origin}/auth/reset-password`,
+        const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? request.nextUrl.origin;
+        const redirectTo = `${origin.replace(/\/$/, "")}/auth/reset-password`;
+        const actionUrl = await generatePasswordRecoveryLink(supabase, email, redirectTo);
+
+        await sendAuthEmail({
+          to: email,
+          actionUrl,
+          kind: "welcome",
+          name: nombre,
         });
       } catch {
         // No fallar la importación si el correo no se pudo enviar
-        log.info("Correo de bienvenida no enviado (SMTP no configurado?)", { email });
+        log.info("Correo de bienvenida no enviado (email provider no configurado?)", { email });
       }
 
     } catch (err) {
