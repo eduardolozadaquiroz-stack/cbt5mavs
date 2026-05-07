@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   const carrera_id = searchParams.get("carrera_id") ?? "";
   const ciclo_id   = searchParams.get("ciclo_id") ?? "";
   const semestre   = searchParams.get("semestre") ?? "";
+  const id_param   = searchParams.get("id") ?? "";
 
   const admin = createSupabaseAdminClient();
   let query = admin
@@ -36,9 +37,10 @@ export async function GET(request: NextRequest) {
     .order("semestre")
     .order("nombre");
 
-  if (carrera_id && isUUID(carrera_id)) query = query.eq("carrera_id", carrera_id);
-  if (ciclo_id   && isUUID(ciclo_id))   query = query.eq("ciclo_id",   ciclo_id);
-  if (semestre)   query = query.eq("semestre", parseInt(semestre, 10));
+  if (id_param     && isUUID(id_param))     query = query.eq("id", id_param);
+  if (carrera_id   && isUUID(carrera_id))   query = query.eq("carrera_id", carrera_id);
+  if (ciclo_id     && isUUID(ciclo_id))     query = query.eq("ciclo_id",   ciclo_id);
+  if (semestre)     query = query.eq("semestre", parseInt(semestre, 10));
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Error al obtener grupos" }, { status: 500 });

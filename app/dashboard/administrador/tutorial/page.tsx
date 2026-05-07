@@ -84,11 +84,29 @@ const GUIA: Paso[] = [
       'Ingresa el RFC (opcional), especialidad y tipo de contrato (Base / Horas / Interino).',
       'Confirma con "Crear Usuario".',
     ],
-    nota: "Los maestros se asignan a grupos desde el módulo de Horarios. Primero crea el maestro, luego asígnalo.",
+    nota: "Los maestros se asignan a grupos y materias desde Grupos → clic en el grupo → 'Asignar Materia / Maestro'. Eso es lo que les permite ver sus grupos en el panel.",
     enlace: { href: `${BASE}/usuarios`, label: "Ir a Usuarios" },
   },
   {
     num: 5,
+    titulo: "Asignar Materias a Grupos",
+    icono: "📖",
+    color: "emerald",
+    descripcion: "Este paso es clave: vincula cada materia con su maestro responsable dentro de cada grupo. Sin esta asignación, los maestros no pueden capturar calificaciones ni asistencias.",
+    pasos: [
+      'Ve al menú lateral → "Grupos".',
+      'En la tabla de grupos, haz clic en el botón verde "Materias" del grupo que quieres configurar.',
+      'Se abrirá la página de detalle del grupo con la lista de materias asignadas (estará vacía si es la primera vez).',
+      'Haz clic en "Asignar Materia / Maestro" (botón azul arriba a la derecha).',
+      'Selecciona la materia del semestre correspondiente, el maestro responsable y el ciclo escolar.',
+      'Haz clic en "Asignar". La materia aparecerá en la lista con el nombre del maestro.',
+      'Repite para todas las materias del grupo (una asignación por materia).',
+    ],
+    nota: "Una vez asignadas, el maestro verá este grupo en su panel de 'Calificaciones' y podrá capturar las notas de sus alumnos por parcial.",
+    enlace: { href: `${BASE}/grupos`, label: "Ir a Grupos" },
+  },
+  {
+    num: 6,
     titulo: "Registrar Alumnos",
     icono: "🎓",
     color: "sky",
@@ -105,7 +123,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/usuarios`, label: "Ir a Usuarios" },
   },
   {
-    num: 6,
+    num: 7,
     titulo: "Registrar Padres de Familia",
     icono: "👨‍👩‍👧",
     color: "teal",
@@ -122,7 +140,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/usuarios`, label: "Ir a Usuarios" },
   },
   {
-    num: 7,
+    num: 8,
     titulo: "Configurar Reinscripción",
     icono: "📋",
     color: "violet",
@@ -140,7 +158,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/reinscripcion`, label: "Ir a Reinscripción" },
   },
   {
-    num: 8,
+    num: 9,
     titulo: "Gestionar Horarios",
     icono: "🕐",
     color: "amber",
@@ -156,7 +174,7 @@ const GUIA: Paso[] = [
     enlace: { href: `${BASE}/horarios`, label: "Ir a Horarios" },
   },
   {
-    num: 9,
+    num: 10,
     titulo: "Publicar Avisos",
     icono: "📢",
     color: "red",
@@ -182,8 +200,9 @@ const colorMap: Record<string, { bg: string; border: string; badge: string; btn:
   sky:    { bg: "bg-sky-50 dark:bg-sky-950/20",      border: "border-sky-200 dark:border-sky-800",      badge: "bg-sky-700 text-white",    btn: "bg-sky-700 hover:bg-sky-800 text-white" },
   teal:   { bg: "bg-teal-50 dark:bg-teal-950/20",    border: "border-teal-200 dark:border-teal-800",    badge: "bg-teal-700 text-white",   btn: "bg-teal-700 hover:bg-teal-800 text-white" },
   violet: { bg: "bg-violet-50 dark:bg-violet-950/20", border: "border-violet-200 dark:border-violet-800", badge: "bg-violet-700 text-white", btn: "bg-violet-700 hover:bg-violet-800 text-white" },
-  amber:  { bg: "bg-amber-50 dark:bg-amber-950/20",  border: "border-amber-200 dark:border-amber-800",  badge: "bg-amber-600 text-white",  btn: "bg-amber-600 hover:bg-amber-700 text-white" },
-  red:    { bg: "bg-red-50 dark:bg-red-950/20",      border: "border-red-200 dark:border-red-800",      badge: "bg-red-700 text-white",    btn: "bg-red-700 hover:bg-red-800 text-white" },
+  amber:   { bg: "bg-amber-50 dark:bg-amber-950/20",   border: "border-amber-200 dark:border-amber-800",   badge: "bg-amber-600 text-white",   btn: "bg-amber-600 hover:bg-amber-700 text-white" },
+  red:     { bg: "bg-red-50 dark:bg-red-950/20",        border: "border-red-200 dark:border-red-800",        badge: "bg-red-700 text-white",     btn: "bg-red-700 hover:bg-red-800 text-white" },
+  emerald: { bg: "bg-emerald-50 dark:bg-emerald-950/20", border: "border-emerald-200 dark:border-emerald-800", badge: "bg-emerald-700 text-white", btn: "bg-emerald-700 hover:bg-emerald-800 text-white" },
 };
 
 export default function TutorialPage() {

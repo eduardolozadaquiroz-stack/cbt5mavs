@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-interface GrupoMaestro {
-  id: string;
+interface MateriaAsignada {
+  grupo_materia_id: string;
+  materia_id: string;
   nombre: string;
-  materias: string[];
-  alumnos: AlumnoGrupo[];
+  clave: string;
 }
 
 interface AlumnoGrupo {
@@ -18,98 +18,102 @@ interface AlumnoGrupo {
   promedio_general: number | null;
 }
 
-interface CalificacionExistente {
-  alumno_id: string;
-  parcial: number;
-  calificacion: number;
-  materia: { nombre: string };
-}
-
-// Materias con ids (cargamos del horario)
-interface HorarioSlot {
-  materia: { id: string; nombre: string };
-  grupo: { id: string } | null;
+interface GrupoMaestro {
+  id: string;
+  nombre: string;
+  semestre: number;
+  turno: string;
+  carrera: { nombre: string; clave: string };
+  ciclo: { nombre: string } | null;
+  materias: MateriaAsignada[];
+  alumnos: AlumnoGrupo[];
 }
 
 export default function CalificacionesMaestroPage() {
   const [grupos, setGrupos] = useState<GrupoMaestro[]>([]);
   const [grupoId, setGrupoId] = useState("");
-  const [materias, setMaterias] = useState<{ id: string; nombre: string }[]>([]);
-  const [materiaId, setMateriaId] = useState("");
+  const [grupoMateriaId, setGrupoMateriaId] = useState("");
   const [parcial, setParcial] = useState(1);
   const [alumnos, setAlumnos] = useState<AlumnoGrupo[]>([]);
   const [calificaciones, setCalificaciones] = useState<Record<string, string>>({});
-  const [existentes, setExistentes] = useState<CalificacionExistente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCals, setLoadingCals] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  // Cargar grupos del maestro
+  // Cargar grupos del maestro (incluye materias con grupo_materia_id y alumnos)
   useEffect(() => {
     fetch("/api/maestro/mis-grupos")
       .then((r) => r.json())
       .then((d) => {
         const gs: GrupoMaestro[] = d.grupos ?? [];
         setGrupos(gs);
-        if (gs.length > 0) setGrupoId(gs[0].id);
+        if (gs.length > 0) {
+          setGrupoId(gs[0].id);
+          setAlumnos(gs[0].alumnos ?? []);
+          const primeraMateria = gs[0].materias?.[0];
+          if (primeraMateria) setGrupoMateriaId(primeraMateria.grupo_materia_id);
+        }
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  // Cargar materias y alumnos cuando cambia grupo
-  useEffect(() => {
-    if (!grupoId) return;
-    const g = grupos.find((x) => x.id === grupoId);
+  // Cuando cambia el grupo seleccionado
+  const handleGrupoChange = (id: string) => {
+    setGrupoId(id);
+    const g = grupos.find((x) => x.id === id);
     setAlumnos(g?.alumnos ?? []);
     setCalificaciones({});
+    const primera = g?.materias?.[0];
+    setGrupoMateriaId(primera?.grupo_materia_id ?? "");
+    setMsg(null);
+  };
 
-    // Cargar materias del grupo desde horarios
-    fetch(`/api/horarios?grupo_id=${grupoId}`)
+  // Cuando cambia la materia o el parcial: cargar calificaciones existentes
+  const cargarExistentes = useCallback(() => {
+    if (!grupoMateriaId) return;
+    setLoadingCals(true);
+    fetch(`/api/calificaciones?grupo_materia_id=${grupoMateriaId}&parcial=${parcial}`)
       .then((r) => r.json())
       .then((d) => {
-        const slots: HorarioSlot[] = d.horarios ?? [];
-        const matMap = new Map<string, string>();
-        slots.forEach((s) => {
-          if (s.materia && s.grupo?.id === grupoId) {
-            matMap.set(s.materia.id, s.materia.nombre);
-          }
-        });
-        const mats = [...matMap.entries()].map(([id, nombre]) => ({ id, nombre }));
-        setMaterias(mats);
-        if (mats.length > 0) setMateriaId(mats[0].id);
-      });
-  }, [grupoId, grupos]);
-
-  // Cargar calificaciones existentes cuando cambia materia/parcial
-  useEffect(() => {
-    if (!materiaId || !grupoId) return;
-    fetch(`/api/calificaciones?grupo_id=${grupoId}&materia_id=${materiaId}&parcial=${parcial}`)
-      .then((r) => r.json())
-      .then((d) => {
-        const cals: CalificacionExistente[] = d.calificaciones ?? [];
-        setExistentes(cals);
         const pre: Record<string, string> = {};
-        cals.forEach((c) => {
+        (d.calificaciones ?? []).forEach((c: { alumno_id: string; calificacion: number }) => {
           pre[c.alumno_id] = String(c.calificacion);
         });
         setCalificaciones(pre);
-      });
-  }, [materiaId, parcial, grupoId]);
+      })
+      .catch(() => {/* silencioso */})
+      .finally(() => setLoadingCals(false));
+  }, [grupoMateriaId, parcial]);
+
+  useEffect(() => {
+    cargarExistentes();
+  }, [cargarExistentes]);
+
+  // Materias del grupo seleccionado
+  const materias = grupos.find((g) => g.id === grupoId)?.materias ?? [];
+  const materiaActual = materias.find((m) => m.grupo_materia_id === grupoMateriaId);
 
   async function guardar() {
-    if (!grupoId || !materiaId) return;
+    if (!grupoMateriaId) return;
     setSaving(true);
     setMsg(null);
     try {
       const body = alumnos
         .filter((a) => calificaciones[a.alumno_id] !== undefined && calificaciones[a.alumno_id] !== "")
         .map((a) => ({
-          alumno_id: a.alumno_id,
-          grupo_id: grupoId,
-          materia_id: materiaId,
+          alumno_id:        a.alumno_id,
+          grupo_materia_id: grupoMateriaId,
           parcial,
-          calificacion: parseFloat(calificaciones[a.alumno_id]),
+          calificacion:     parseFloat(calificaciones[a.alumno_id]),
         }));
+
+      if (body.length === 0) {
+        setMsg({ tipo: "error", texto: "No hay calificaciones que guardar." });
+        return;
+      }
+
       const res = await fetch("/api/calificaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,14 +121,17 @@ export default function CalificacionesMaestroPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setMsg({ tipo: "ok", texto: "Calificaciones guardadas correctamente." });
+        setMsg({ tipo: "ok", texto: `${data.guardados ?? body.length} calificaciones guardadas.` });
       } else {
         setMsg({ tipo: "error", texto: data.error ?? "Error al guardar." });
       }
+    } catch {
+      setMsg({ tipo: "error", texto: "Error de conexión." });
     } finally {
       setSaving(false);
     }
   }
+
 
   return (
     <>
@@ -139,11 +146,11 @@ export default function CalificacionesMaestroPage() {
             <div className="mb-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-headline-md text-headline-md text-on-background">Captura de Calificaciones</h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Selecciona grupo, materia y parcial.</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Selecciona grupo, materia y parcial para capturar.</p>
               </div>
               <button
                 onClick={guardar}
-                disabled={saving || !grupoId || !materiaId}
+                disabled={saving || !grupoMateriaId || alumnos.length === 0}
                 className="px-4 py-2 bg-primary text-on-primary font-label-bold text-label-bold rounded hover:bg-primary-container shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-sm">save</span>
@@ -166,11 +173,12 @@ export default function CalificacionesMaestroPage() {
                     id="grupo-sel"
                     className="w-full border border-outline-variant rounded px-3 py-2 bg-surface-container-lowest focus:outline-none focus:border-primary"
                     value={grupoId}
-                    onChange={(e) => setGrupoId(e.target.value)}
+                    onChange={(e) => handleGrupoChange(e.target.value)}
                     disabled={loading}
                   >
+                    {grupos.length === 0 && <option value="">Sin grupos asignados</option>}
                     {grupos.map((g) => (
-                      <option key={g.id} value={g.id}>{g.nombre}</option>
+                      <option key={g.id} value={g.id}>{g.nombre} — {g.carrera.clave} Sem.{g.semestre}</option>
                     ))}
                   </select>
                 </div>
@@ -179,12 +187,13 @@ export default function CalificacionesMaestroPage() {
                   <select
                     id="materia-sel"
                     className="w-full border border-outline-variant rounded px-3 py-2 bg-surface-container-lowest focus:outline-none focus:border-primary"
-                    value={materiaId}
-                    onChange={(e) => setMateriaId(e.target.value)}
+                    value={grupoMateriaId}
+                    onChange={(e) => { setGrupoMateriaId(e.target.value); setCalificaciones({}); setMsg(null); }}
                     disabled={materias.length === 0}
                   >
+                    {materias.length === 0 && <option value="">Sin materias asignadas</option>}
                     {materias.map((m) => (
-                      <option key={m.id} value={m.id}>{m.nombre}</option>
+                      <option key={m.grupo_materia_id} value={m.grupo_materia_id}>{m.nombre} ({m.clave})</option>
                     ))}
                   </select>
                 </div>
@@ -194,7 +203,7 @@ export default function CalificacionesMaestroPage() {
                     id="parcial-sel"
                     className="w-full border border-outline-variant rounded px-3 py-2 bg-surface-container-lowest focus:outline-none focus:border-primary"
                     value={parcial}
-                    onChange={(e) => setParcial(parseInt(e.target.value))}
+                    onChange={(e) => { setParcial(parseInt(e.target.value)); setCalificaciones({}); setMsg(null); }}
                   >
                     <option value={1}>Primer Parcial</option>
                     <option value={2}>Segundo Parcial</option>
@@ -204,9 +213,15 @@ export default function CalificacionesMaestroPage() {
               </div>
             </div>
 
-            {/* Tabla de alumnos */}
+            {/* Estado de carga */}
             {loading ? (
-              <p className="text-sm text-on-surface-variant">Cargando…</p>
+              <p className="text-sm text-on-surface-variant">Cargando grupos…</p>
+            ) : grupos.length === 0 ? (
+              <div className="bg-surface-container-high border border-outline-variant rounded-xl p-lg text-center">
+                <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2 block">school</span>
+                <p className="text-on-surface-variant font-medium">No tienes grupos asignados aún.</p>
+                <p className="text-sm text-on-surface-variant mt-1">Pide al administrador que te asigne grupos y materias.</p>
+              </div>
             ) : alumnos.length === 0 ? (
               <div className="bg-surface-container-high border border-outline-variant rounded-xl p-lg text-center">
                 <p className="text-on-surface-variant">Sin alumnos en este grupo.</p>
@@ -214,19 +229,18 @@ export default function CalificacionesMaestroPage() {
             ) : (
               <div className="bg-white border border-outline-variant rounded-lg shadow-sm overflow-hidden">
                 <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface-bright">
-                  <h3 className="font-title-sm text-title-sm text-on-surface">Lista de Alumnos — Parcial {parcial}</h3>
-                  <span className="text-xs text-on-surface-variant">{alumnos.length} alumnos</span>
+                  <h3 className="font-title-sm text-title-sm text-on-surface">
+                    {materiaActual?.nombre ?? "—"} — Parcial {parcial}
+                  </h3>
+                  <span className="text-xs text-on-surface-variant">
+                    {loadingCals ? "Cargando calificaciones…" : `${alumnos.length} alumnos`}
+                  </span>
                 </div>
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-surface-container-lowest border-b border-outline-variant">
                       <th className="py-3 px-4 font-label-bold text-label-bold text-on-surface-variant uppercase text-xs">Nombre</th>
                       <th className="py-3 px-4 font-label-bold text-label-bold text-on-surface-variant uppercase text-xs">Matrícula</th>
-                      {existentes.length > 0 && (
-                        <>
-                          {parcial > 1 && <th className="py-3 px-4 font-label-bold text-label-bold text-on-surface-variant uppercase text-xs text-center">P{parcial - 1} ant.</th>}
-                        </>
-                      )}
                       <th className="py-3 px-4 font-label-bold text-label-bold text-on-primary-fixed-variant uppercase text-xs text-center bg-primary-fixed/30 border-x border-outline-variant">
                         Parcial {parcial}
                       </th>
