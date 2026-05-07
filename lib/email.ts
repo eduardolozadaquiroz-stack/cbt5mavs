@@ -198,117 +198,6 @@ function getSmtpConfig(): SmtpConfig {
   };
 }
 
-class WebSmtpConnection {
-  private socket: any;
-  private reader: ReadableStreamDefaultReader<Uint8Array>;
-  private writer: WritableStreamDefaultWriter<Uint8Array>;
-  private buffer = "";
-  private readonly decoder = new TextDecoder();
-  private readonly encoder = new TextEncoder();
-
-  constructor(socket: any) {
-    this.socket = socket;
-    this.reader = socket.readable.getReader();
-    this.writer = socket.writable.getWriter();
-  }
-
-  async startTls() {
-    this.reader.releaseLock();
-    this.writer.releaseLock();
-    this.socket = this.socket.startTls();
-    this.reader = this.socket.readable.getReader();
-    this.writer = this.socket.writable.getWriter();
-    this.buffer = "";
-  }
-
-  async writeLine(line: string) {
-    await this.writer.write(this.encoder.encode(`${line}\r\n`));
-  }
-
-  async writeData(data: string) {
-    await this.writer.write(this.encoder.encode(data));
-  }
-
-  private async readLine() {
-    for (;;) {
-      const index = this.buffer.indexOf("\n");
-      if (index >= 0) {
-        const line = this.buffer.slice(0, index + 1).replace(/\r?\n$/, "");
-        this.buffer = this.buffer.slice(index + 1);
-        return line;
-      }
-
-      const { value, done } = await this.reader.read();
-      if (done) throw new Error("La conexión SMTP se cerró inesperadamente.");
-      this.buffer += this.decoder.decode(value, { stream: true });
-    }
-  }
-
-  async readResponse() {
-    let code = 0;
-    for (;;) {
-      const line = await this.readLine();
-      const match = /^(\d{3})([\s-])/.exec(line);
-      if (!match) continue;
-      code = Number(match[1]);
-      if (match[2] === " ") break;
-    }
-    if (code >= 400) throw new Error(`SMTP respondió con error ${code}.`);
-    return code;
-  }
-
-  async close() {
-    try {
-      await this.writeLine("QUIT");
-      await this.readResponse();
-    } catch {
-      // La conexión puede estar cerrada después de un error SMTP.
-    }
-    try {
-      await this.writer.close();
-    } catch {}
-    this.reader.releaseLock();
-  }
-}
-
-async function sendWithCloudflareSockets(config: SmtpConfig, to: string, message: string) {
-  // @ts-expect-error cloudflare:sockets existe solo dentro del runtime de Cloudflare Workers.
-  const { connect } = await import(/* webpackIgnore: true */ "cloudflare:sockets");
-  const socket = connect(
-    { hostname: config.host, port: config.port },
-    { secureTransport: config.secure ? "on" : "starttls" }
-  );
-  const smtp = new WebSmtpConnection(socket);
-
-  try {
-    await smtp.readResponse();
-    await smtp.writeLine(`EHLO ${config.host}`);
-    await smtp.readResponse();
-
-    if (!config.secure) {
-      await smtp.writeLine("STARTTLS");
-      await smtp.readResponse();
-      await smtp.startTls();
-      await smtp.writeLine(`EHLO ${config.host}`);
-      await smtp.readResponse();
-    }
-
-    const auth = Buffer.from(`\u0000${config.user}\u0000${config.pass}`, "utf8").toString("base64");
-    await smtp.writeLine(`AUTH PLAIN ${auth}`);
-    await smtp.readResponse();
-    await smtp.writeLine(`MAIL FROM:<${config.user}>`);
-    await smtp.readResponse();
-    await smtp.writeLine(`RCPT TO:<${to}>`);
-    await smtp.readResponse();
-    await smtp.writeLine("DATA");
-    await smtp.readResponse();
-    await smtp.writeData(`${dotStuff(message)}\r\n.\r\n`);
-    await smtp.readResponse();
-  } finally {
-    await smtp.close();
-  }
-}
-
 async function sendWithNodeTls(config: SmtpConfig, to: string, message: string) {
   if (!config.secure) {
     throw new Error("En desarrollo local usa SMTP_PORT=465 y SMTP_SECURE=true para Gmail.");
@@ -393,13 +282,7 @@ async function sendWithNodeTls(config: SmtpConfig, to: string, message: string) 
 
 async function sendSmtpEmail(to: string, message: string) {
   const config = getSmtpConfig();
-  try {
-    await sendWithCloudflareSockets(config, to, message);
-  } catch (error) {
-    const messageText = error instanceof Error ? error.message : String(error);
-    if (!messageText.includes("cloudflare:sockets")) throw error;
-    await sendWithNodeTls(config, to, message);
-  }
+  await sendWithNodeTls(config, to, message);
 }
 
 export async function generatePasswordRecoveryLink(
