@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recuperar contraseña – CBT Núm. 5</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background-color:#f0f4f8;padding:32px 16px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card principal -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;
+                      overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+
+          <!-- ── ENCABEZADO AZUL ────────────────────────────────────────── -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a3a6b 0%,#1e56ab 60%,#2563eb 100%);
+                       padding:36px 40px 28px 40px;text-align:center;">
+              <!-- Logo -->
+              <img src="https://cbt5mavs.pages.dev/logo.png"
+                   alt="CBT Núm. 5 Chalco"
+                   width="72" height="72"
+                   style="border-radius:12px;display:block;margin:0 auto 16px auto;
+                          border:3px solid rgba(255,255,255,0.25);" />
+              <!-- Nombre institución -->
+              <p style="margin:0;color:#ffffff;font-size:11px;font-weight:700;
+                        letter-spacing:2px;text-transform:uppercase;opacity:0.8;">
+                Centro de Bachillerato Tecnológico
+              </p>
+              <h1 style="margin:6px 0 0 0;color:#ffffff;font-size:24px;font-weight:800;
+                         letter-spacing:-0.3px;line-height:1.2;">
+                CBT Núm. 5 &ndash; Chalco
+              </h1>
+            </td>
+          </tr>
+
+          <!-- ── AVISO SEGURIDAD ────────────────────────────────────────── -->
+          <tr>
+            <td style="background-color:#fef3c7;border-bottom:2px solid #f59e0b;
+                       padding:12px 40px;text-align:center;">
+              <p style="margin:0;color:#92400e;font-size:12px;font-weight:600;">
+                🔐 &nbsp;Solicitud de recuperación de contraseña
+              </p>
+            </td>
+          </tr>
+
+          <!-- ── CUERPO PRINCIPAL ───────────────────────────────────────── -->
+          <tr>
+            <td style="padding:40px 40px 28px 40px;">
+
+              <!-- Ícono sobre el título -->
+              <div style="text-align:center;margin-bottom:20px;">
+                <span style="display:inline-block;background-color:#fef9ee;border-radius:50%;
+                             width:60px;height:60px;line-height:60px;font-size:28px;">🔑</span>
+              </div>
+
+              <h2 style="margin:0 0 8px 0;color:#1e3a5f;font-size:20px;font-weight:700;
+                         text-align:center;">
+                Restablecer contraseña
+              </h2>
+              <p style="margin:0 0 24px 0;color:#64748b;font-size:14px;line-height:1.6;
+                        text-align:center;">
+                Recibimos una solicitud para restablecer la contraseña de la cuenta asociada
+                a este correo en el portal del CBT Núm. 5.<br />
+                Haz clic en el botón para crear una nueva contraseña.
+              </p>
+
+              <!-- Botón principal -->
+              <div style="text-align:center;margin:28px 0;">
+                <a href="{{ .ConfirmationURL }}"
+                   style="display:inline-block;background-color:#d97706;color:#ffffff;
+                          font-size:15px;font-weight:700;text-decoration:none;
+                          padding:14px 36px;border-radius:8px;
+                          box-shadow:0 4px 12px rgba(217,119,6,0.35);">
+                  Crear nueva contraseña
+                </a>
+              </div>
+
+              <!-- Nota: si no solicitaste el cambio -->
+              <div style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;
+                          padding:14px 18px;margin:20px 0;">
+                <p style="margin:0;color:#991b1b;font-size:12px;line-height:1.5;">
+                  <strong>⚠️ ¿No solicitaste este cambio?</strong><br />
+                  Si no pediste restablecer tu contraseña, ignora este correo. Tu contraseña
+                  actual permanece segura y no cambiará.
+                </p>
+              </div>
+
+              <!-- Nota expiración -->
+              <p style="margin:16px 0 0 0;color:#94a3b8;font-size:12px;text-align:center;
+                        line-height:1.5;">
+                Este enlace expira en <strong>1 hora</strong> por seguridad.
+              </p>
+
+              <!-- Separador -->
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0;" />
+
+              <!-- Enlace alternativo (fallback) -->
+              <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;
+                        line-height:1.6;word-break:break-all;">
+                Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br />
+                <a href="{{ .ConfirmationURL }}"
+                   style="color:#1e56ab;text-decoration:none;">{{ .ConfirmationURL }}</a>
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- ── INFORMACIÓN ADICIONAL ──────────────────────────────────── -->
+          <tr>
+            <td style="background-color:#f8fafc;border-top:1px solid #e2e8f0;
+                       padding:24px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:0 12px 0 0;vertical-align:top;width:50%;">
+                    <p style="margin:0;color:#475569;font-size:12px;font-weight:700;
+                               text-transform:uppercase;letter-spacing:1px;">Portal escolar</p>
+                    <p style="margin:4px 0 0 0;color:#1e56ab;font-size:12px;">
+                      <a href="https://cbt5mavs.pages.dev/login"
+                         style="color:#1e56ab;text-decoration:none;">
+                        cbt5mavs.pages.dev/login
+                      </a>
+                    </p>
+                  </td>
+                  <td style="padding:0 0 0 12px;vertical-align:top;width:50%;
+                              border-left:1px solid #e2e8f0;">
+                    <p style="margin:0 0 0 12px;color:#475569;font-size:12px;font-weight:700;
+                               text-transform:uppercase;letter-spacing:1px;">¿Olvidaste tu cuenta?</p>
+                    <p style="margin:4px 0 0 12px;color:#64748b;font-size:12px;">
+                      Acude con el administrador escolar para recuperar tu matrícula o correo registrado.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ── PIE DE PÁGINA ──────────────────────────────────────────── -->
+          <tr>
+            <td style="background-color:#1a3a6b;padding:20px 40px;text-align:center;">
+              <p style="margin:0;color:#93c5fd;font-size:12px;line-height:1.5;">
+                &copy; 2026 CBT Núm. 5 Chalco &mdash; Valle de Chalco, Estado de México
+              </p>
+              <p style="margin:6px 0 0 0;color:#60a5fa;font-size:11px;">
+                Este es un correo automático, por favor no respondas a este mensaje.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- / Card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
