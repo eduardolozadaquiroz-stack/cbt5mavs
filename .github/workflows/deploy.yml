@@ -40,6 +40,19 @@ jobs:
             [ -d ".open-next/$dir" ] && cp -r ".open-next/$dir" .pages-dist/
           done
           [ -d ".open-next/.build" ] && cp -r .open-next/.build .pages-dist/
+          cat > .pages-dist/_routes.json << 'EOF'
+          {
+            "version": 1,
+            "include": ["/*"],
+            "exclude": [
+              "/_next/static/*",
+              "/favicon.ico",
+              "/logo.png",
+              "/images/*",
+              "/icons/*"
+            ]
+          }
+          EOF
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy .pages-dist --project-name cbt5mavs --branch main --commit-dirty=true
