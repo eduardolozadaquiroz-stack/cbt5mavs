@@ -12,7 +12,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-blue-900 dark:text-blue-100">
           <a
             className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 underline transition-colors duration-200"
-            href="#"
+            href="/privacidad"
           >
             Privacidad
           </a>
