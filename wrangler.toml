@@ -1,7 +1,8 @@
 name = "cbt5mavs"
 compatibility_date = "2026-05-07"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".open-next/assets"
+
+
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
 # SUPABASE_SERVICE_ROLE_KEY: wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY --project-name cbt5mavs
