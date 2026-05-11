@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Setup local Cloudflare Pages bindings preview (only in dev)
 if (process.env.NODE_ENV === "development") {
   try {
-    const { setupDevPlatform } = await import("@cloudflare/next-on-pages/next-dev");
+    const { setupDevPlatform } = await import("@opennextjs/cloudflare/next-dev");
     await setupDevPlatform();
   } catch {
     // No-op si no está disponible en este entorno

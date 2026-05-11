@@ -56,3 +56,5 @@ blob-report/
 # Cloudflare
 .wrangler/
 
+
+.vercel
