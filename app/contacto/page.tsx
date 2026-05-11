@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { isSectionEnabled } from "@/lib/site-config";
 import Navbar from "@/components/layout/Navbar";
 import ContactoFooter from "@/components/layout/ContactoFooter";
 import ContactoHeader from "@/components/sections/ContactoHeader";
@@ -6,7 +8,11 @@ import ContactoInfoGrid from "@/components/sections/ContactoInfoGrid";
 import ContactoMap from "@/components/sections/ContactoMap";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-export default function ContactoPage() {
+// ISR: revalidar estado de la sección cada 30 s.
+export const revalidate = 30;
+
+export default async function ContactoPage() {
+  if (!(await isSectionEnabled("contacto"))) notFound();
   return (
     <>
       <LoadingSpinner duration={3000} />

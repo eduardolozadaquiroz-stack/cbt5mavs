@@ -1,34 +1,17 @@
-"use client";
+import { notFound } from "next/navigation";
+import { isSectionEnabled } from "@/lib/site-config";
+import AvisosContent from "./AvisosContent";
 
-import { useState, useCallback } from "react";
-import Navbar from "@/components/layout/Navbar";
-import AvisosFooter from "@/components/layout/AvisosFooter";
-import AvisosHeader from "@/components/sections/AvisosHeader";
-import AvisosGrid from "@/components/sections/AvisosGrid";
-import AvisosPagination from "@/components/sections/AvisosPagination";
-import LoadingSpinner from "@/components/LoadingSpinner";
+// ISR: revalidar estado de la seccion cada 30 s.
+export const revalidate = 30;
 
-const LIMIT = 6;
+export const metadata = {
+  title: "Avisos - CBT Num. 5, Maria Amparo Viderique de Shein",
+};
 
-export default function AvisosPage() {
-  const [tipo,  setTipo]  = useState("");
-  const [page,  setPage]  = useState(1);
-  const [total, setTotal] = useState(0);
+export default async function AvisosPage() {
+  // A01 - Access Control: bloquear acceso si la seccion esta deshabilitada
+  if (!(await isSectionEnabled("avisos"))) notFound();
 
-  const handleTipo = (t: string) => { setTipo(t); setPage(1); };
-  const handleTotal = useCallback((t: number) => setTotal(t), []);
-
-  return (
-    <>
-      <LoadingSpinner duration={3000} />
-      <Navbar activePage="avisos" />
-      <main className="flex-grow w-full max-w-[1280px] mx-auto px-8 py-12 flex flex-col gap-8">
-        <AvisosHeader tipo={tipo} onTipoChange={handleTipo} />
-        <AvisosGrid   tipo={tipo} page={page} onTotal={handleTotal} />
-        <AvisosPagination page={page} total={total} limit={LIMIT} onPage={setPage} />
-      </main>
-      <AvisosFooter />
-    </>
-  );
+  return <AvisosContent />;
 }
-
