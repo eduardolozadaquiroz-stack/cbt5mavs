@@ -2,15 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import { useAdminConfig } from "@/app/context/AdminConfigContext";
 
 type NavPage = "inicio" | "carreras" | "admision" | "avisos" | "contacto" | "nosotros";
 
 interface NavbarProps {
   activePage?: NavPage;
-}
-
-interface SectionsConfig {
-  [key: string]: { enabled: boolean };
 }
 
 const navLinks: { label: string; page: NavPage; href: string }[] = [
@@ -54,37 +51,18 @@ function useSmartNavbar(threshold = 80) {
 }
 
 export default function Navbar({ activePage }: NavbarProps) {
-  const [sectionsConfig, setSectionsConfig] = useState<SectionsConfig>({});
-  const [loading, setLoading] = useState(true);
+  const { config } = useAdminConfig();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navVisible = useSmartNavbar(80);
 
-  useEffect(() => {
-    const fetchSectionsConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/admision-config");
-        const data: SectionsConfig = await response.json();
-        setSectionsConfig(data);
-      } catch (error) {
-        console.error("Error fetching sections config:", error);
-        // Por defecto mostrar todas las secciones si hay error
-        const defaultConfig: SectionsConfig = {};
-        navLinks.forEach(link => {
-          defaultConfig[link.page] = { enabled: true };
-        });
-        setSectionsConfig(defaultConfig);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSectionsConfig();
-  }, []);
-
-  // Filtrar links según la configuración
-  const filteredNavLinks = navLinks.filter(
-    (link) => sectionsConfig[link.page]?.enabled !== false
-  );
+  // Filtrar links según la configuración del contexto (incluye secciones y admision.habilitada)
+  const filteredNavLinks = navLinks.filter(({ page }) => {
+    const sectionEnabled = config.secciones?.[page]?.enabled;
+    if (sectionEnabled !== undefined) return sectionEnabled;
+    // Fallback específico para admisión: usar admision.habilitada
+    if (page === "admision") return config.admision?.habilitada !== false;
+    return true;
+  });
 
   return (
     <header
