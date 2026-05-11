@@ -19,6 +19,23 @@ function extractPath(url: string, bucket: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// A10 – SSRF / Open Redirect: solo permitir URLs del propio proyecto Supabase.
+function isAllowedStorageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const supabaseHost = new URL(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://invalid.supabase.co"
+    ).hostname;
+    return (
+      parsed.hostname === supabaseHost &&
+      parsed.pathname.includes("/storage/v1/object/")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const [, err] = await requireRole("admin", "alumno");
   if (err) return err;
@@ -29,11 +46,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Parámetro 'url' requerido" }, { status: 400 });
   }
 
+  // A10 – Open Redirect: rechazar URLs que no sean del storage de este proyecto
+  if (!isAllowedStorageUrl(rawUrl)) {
+    return NextResponse.json({ error: "URL no permitida" }, { status: 400 });
+  }
+
   const bucket = "documentos";
   const path = extractPath(rawUrl, bucket);
 
   if (!path) {
-    // URL desconocida, redirigir directo (puede fallar si sigue siendo pública)
+    // URL válida de Supabase pero en bucket distinto — redirigir sin re-signing
     return NextResponse.redirect(rawUrl);
   }
 

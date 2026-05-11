@@ -11,34 +11,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
-
-
-// ── Rate limiter simple ───────────────────────────────────────────────────────
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const MAX = 3;
-const WINDOW = 10 * 60 * 1000; // 10 min
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + WINDOW });
-    return true;
-  }
-  if (entry.count >= MAX) return false;
-  entry.count++;
-  return true;
-}
+import { forgotPasswordLimiter } from "@/lib/rate-limit";
 
 function getIp(req: NextRequest) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  return (
+    req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    "unknown"
+  );
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(request: NextRequest) {
   const ip = getIp(request);
-  if (!checkRateLimit(ip)) {
+
+  // A07 – Auth Failures: rate limiting con KV (efectivo en Cloudflare Workers
+  // multi-instancia a diferencia de un Map en memoria)
+  const rl = await forgotPasswordLimiter.check(ip);
+  if (!rl.allowed) {
     // Respuesta genérica para no revelar nada (OWASP A07)
     return NextResponse.json({ ok: true });
   }

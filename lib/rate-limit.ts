@@ -162,6 +162,12 @@ export const loginLimiter = new RateLimiter({
   blockMs: 30 * 60 * 1000,
 }, "login");
 
+export const forgotPasswordLimiter = new RateLimiter({
+  maxAttempts: 3,
+  windowMs: 10 * 60 * 1000,  // 3 intentos cada 10 min
+  blockMs: 10 * 60 * 1000,
+}, "forgot");
+
 export const vinculacionLimiter = new RateLimiter({
   maxAttempts: 5,
   windowMs: 60 * 60 * 1000,
