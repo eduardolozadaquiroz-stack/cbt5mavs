@@ -1,5 +1,4 @@
 name = "cbt5mavs"
-account_id = "b697fe9dbba23aa3186551eb24a41589"
 compatibility_date = "2026-05-07"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".open-next/assets"
