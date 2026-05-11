@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacidadPage() {
   return (
     <>
-      <Navbar activePage="" />
+      <Navbar />
 
       <main className="flex-grow w-full max-w-[860px] mx-auto px-4 md:px-8 py-16 flex flex-col gap-10">
 
