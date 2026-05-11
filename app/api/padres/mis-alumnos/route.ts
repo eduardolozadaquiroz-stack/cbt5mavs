@@ -14,7 +14,6 @@ import { requireRole } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { createLogger } from "@/lib/logger";
 
-export const runtime = 'edge';
 
 const log = createLogger("api/padres/mis-alumnos");
 

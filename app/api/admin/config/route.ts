@@ -10,7 +10,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { requireRole } from "@/lib/auth";
 
-export const runtime = 'edge';
 
 const TABLE = "site_config";
 const CONFIG_ID = 1;

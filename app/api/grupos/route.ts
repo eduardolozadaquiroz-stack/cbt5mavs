@@ -6,7 +6,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireAuth, requireRole } from "@/lib/auth";
 
-export const runtime = 'edge';
 
 function sanitize(v: unknown, maxLen = 100): string {
   if (typeof v !== "string") return "";

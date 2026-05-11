@@ -8,7 +8,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole, auditLog } from "@/lib/auth";
 import { sanitize } from "@/lib/validate";
 
-export const runtime = 'edge';
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 export async function GET() {

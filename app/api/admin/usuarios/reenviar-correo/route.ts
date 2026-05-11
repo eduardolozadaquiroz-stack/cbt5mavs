@@ -11,7 +11,6 @@ import { requireRole } from "@/lib/auth";
 import { isEmail } from "@/lib/validate";
 import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
-export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   const [, err] = await requireRole("admin");

@@ -6,7 +6,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createLogger } from "@/lib/logger";
 
-export const runtime = 'edge';
 
 const log = createLogger("api/auth/cambiar-contrasena");
 

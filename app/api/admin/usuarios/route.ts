@@ -8,7 +8,6 @@ import { requireRole, auditLog } from "@/lib/auth";
 import { sanitize, isEmail } from "@/lib/validate";
 import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
-export const runtime = 'edge';
 
 const ROLES_VALIDOS = ["alumno", "maestro", "admin", "padres"];
 

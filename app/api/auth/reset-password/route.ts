@@ -16,7 +16,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 
-export const runtime = 'edge';
 
 const MIN_LEN = 8;
 const PWD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/; // al menos 1 letra y 1 número

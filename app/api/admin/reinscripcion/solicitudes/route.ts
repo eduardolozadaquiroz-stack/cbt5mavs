@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 
-export const runtime = 'edge';
 
 const ESTADOS_VALIDOS = ["borrador","enviada","en_revision","aprobada","rechazada"];
 

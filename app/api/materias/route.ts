@@ -10,7 +10,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireAuth, requireRole } from "@/lib/auth";
 import { isUUID } from "@/lib/validate";
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const [, err] = await requireAuth();
