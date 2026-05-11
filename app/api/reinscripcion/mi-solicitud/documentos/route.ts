@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 function sanitize(v: unknown, max = 200): string {
   if (typeof v !== "string") return "";
   return v.trim().slice(0, max).replace(/[\x00-\x1F\x7F]/g, "");

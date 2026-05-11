@@ -18,6 +18,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
+
+export const runtime = 'edge';
 // crypto.randomUUID() está disponible como global en Cloudflare Workers y Node.js 19+
 
 // Configuración de buckets permitidos y sus restricciones

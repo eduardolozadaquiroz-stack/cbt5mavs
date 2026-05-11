@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
+export const runtime = 'edge';
+
 // ── Rate limiter simple ───────────────────────────────────────────────────────
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const MAX = 3;

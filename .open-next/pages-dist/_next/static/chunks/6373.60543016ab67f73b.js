@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[6373],{6373:(e,t,r)=>{r.r(t),r.d(t,{createBrowserClient:()=>u,getBrowserClient:()=>a});var n=r(8826);function u(){return(0,n.createBrowserClient)("https://TU_PROYECTO.supabase.co","tu_anon_key_aqui")}let s=null;function a(){return s||(s=u()),s}}}]);

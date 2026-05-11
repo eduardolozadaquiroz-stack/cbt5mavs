@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 // Extrae el path dentro del bucket desde una URL de Supabase Storage
 // Soporta formato público: .../object/public/<bucket>/<path>
 // Soporta formato signed:  .../object/sign/<bucket>/<path>?token=...

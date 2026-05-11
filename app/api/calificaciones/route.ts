@@ -11,6 +11,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireAuth, requireRole, auditLog } from "@/lib/auth";
 import { isUUID } from "@/lib/validate";
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   const [user, err] = await requireAuth();
   if (err) return err;

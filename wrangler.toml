@@ -1,10 +1,13 @@
 name = "cbt5mavs"
 compatibility_date = "2026-05-07"
 compatibility_flags = ["nodejs_compat"]
-main = ".open-next/worker.js"
-assets = { directory = ".open-next/assets" }
+pages_build_output_dir = ".vercel/output/static"
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
-# SUPABASE_SERVICE_ROLE_KEY se sube como secret vía: wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-# SMTP_USER / SMTP_PASS se suben como secrets vía wrangler secret put
-# EMAIL_FROM / EMAIL_REPLY_TO pueden subirse como secrets o variables en Cloudflare
+# SUPABASE_SERVICE_ROLE_KEY: wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY --project-name cbt5mavs
+# GMAIL_CLIENT_ID:           wrangler pages secret put GMAIL_CLIENT_ID --project-name cbt5mavs
+# GMAIL_CLIENT_SECRET:       wrangler pages secret put GMAIL_CLIENT_SECRET --project-name cbt5mavs
+# GMAIL_REFRESH_TOKEN:       wrangler pages secret put GMAIL_REFRESH_TOKEN --project-name cbt5mavs
+# EMAIL_FROM:                wrangler pages secret put EMAIL_FROM --project-name cbt5mavs
+#   Ejemplo: "CBT Num. 5 Chalco <tucuenta@gmail.com>"
+# EMAIL_REPLY_TO (opcional): wrangler pages secret put EMAIL_REPLY_TO --project-name cbt5mavs

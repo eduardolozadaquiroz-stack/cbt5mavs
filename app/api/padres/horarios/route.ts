@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   const [user, err] = await requireAuth();
   if (err) return err;

@@ -8,6 +8,11 @@ node_modules/
 out/
 build/
 dist/
+.open-next/
+.vercel/
+
+# Logs de dev
+*.log
 
 # Environment variables — NUNCA subir a GitHub
 .env

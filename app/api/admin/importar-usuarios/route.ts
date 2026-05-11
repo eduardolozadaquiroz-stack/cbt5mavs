@@ -11,6 +11,8 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createLogger } from "@/lib/logger";
 import { generatePasswordRecoveryLink, sendAuthEmail } from "@/lib/email";
 
+export const runtime = 'edge';
+
 const log = createLogger("api/admin/importar-usuarios");
 
 interface UsuarioCSV {

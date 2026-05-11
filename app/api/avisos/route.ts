@@ -7,6 +7,8 @@ import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/sup
 import { requireRole, getAuthUser, auditLog } from "@/lib/auth";
 import { sanitize, isSafeImageUrl } from "@/lib/validate";
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const page    = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));

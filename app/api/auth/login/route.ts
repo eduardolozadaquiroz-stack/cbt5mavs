@@ -13,6 +13,8 @@ import { loginLimiter } from "@/lib/rate-limit";
 import { createLogger } from "@/lib/logger";
 import { loginSchema } from "@/lib/schemas";
 
+export const runtime = 'edge';
+
 const log = createLogger("api/auth/login");
 
 // ── Helper: obtener IP real del CDN de confianza ─────────────────────────────

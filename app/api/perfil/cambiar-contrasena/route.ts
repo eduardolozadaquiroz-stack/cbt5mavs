@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 const PWD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 
 export async function POST(request: NextRequest) {

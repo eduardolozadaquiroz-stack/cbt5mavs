@@ -7,6 +7,8 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 export async function GET() {
   const [user, err] = await requireRole("maestro");
   if (err) return err;

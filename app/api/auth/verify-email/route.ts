@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const token_hash = searchParams.get("token_hash");

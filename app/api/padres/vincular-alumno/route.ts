@@ -20,6 +20,8 @@ import { sanitize, isCURP, normalizeCURP, isValidDate } from "@/lib/validate";
 import { vinculacionLimiter } from "@/lib/rate-limit";
 import { createLogger } from "@/lib/logger";
 
+export const runtime = 'edge';
+
 const log = createLogger("api/padres/vincular-alumno");
 
 // ── Rate limit: usa el limiter centralizado de lib/rate-limit.ts ─────────────

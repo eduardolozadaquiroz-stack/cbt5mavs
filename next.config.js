@@ -3,6 +3,12 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Setup local Cloudflare Pages bindings preview (only in dev)
+if (process.env.NODE_ENV === "development") {
+  const { setupDevPlatform } = await import("@cloudflare/next-on-pages/next-dev");
+  await setupDevPlatform();
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,

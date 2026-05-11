@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import "./globals.css";
 import RootLayoutClient from "./RootLayoutClient";
 
+export const runtime = 'edge';
+
 export const metadata: Metadata = {
   title: "CBT Núm. 5 – María Amparo Viderique de Shein",
   description: "Centro de Bachillerato Tecnológico Núm. 5, Chalco",

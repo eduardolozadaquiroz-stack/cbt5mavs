@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = 'edge';
+
 export type SectionKey =
   | "inicio"
   | "carreras"
