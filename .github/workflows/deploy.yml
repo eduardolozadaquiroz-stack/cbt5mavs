@@ -24,39 +24,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Build for Cloudflare
-        run: npm run build:cf
+      - name: Build for Cloudflare Pages
+        run: npx @cloudflare/next-on-pages
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Create pages-dist
-        run: |
-          mkdir -p .open-next/pages-dist
-          cp -r .open-next/assets/. .open-next/pages-dist/
-          cp -r .open-next/cloudflare .open-next/pages-dist/
-          cp -r .open-next/middleware .open-next/pages-dist/
-          cp -r .open-next/.build .open-next/pages-dist/
-          cp -r .open-next/server-functions .open-next/pages-dist/
-          cp .open-next/worker.js .open-next/pages-dist/_worker.js
-          cat > .open-next/pages-dist/_routes.json << 'EOF'
-          {
-            "version": 1,
-            "include": ["/*"],
-            "exclude": [
-              "/_next/static/*",
-              "/icons/*",
-              "/images/*",
-              "/favicon.ico",
-              "/logo.png",
-              "/BUILD_ID"
-            ]
-          }
-          EOF
-
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy .open-next/pages-dist --project-name cbt5mavs --branch main --commit-dirty=true
+        run: npx wrangler pages deploy .vercel/output/static --project-name cbt5mavs --branch main --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
