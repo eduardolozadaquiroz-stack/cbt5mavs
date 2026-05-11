@@ -24,12 +24,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Build for Cloudflare Pages
-        run: npx @cloudflare/next-on-pages
+      - name: Vercel build
+        run: npx vercel@latest build --yes
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Process for Cloudflare Pages
+        run: npx @cloudflare/next-on-pages --skip-build
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy .vercel/output/static --project-name cbt5mavs --branch main --commit-dirty=true
