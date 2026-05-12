@@ -47,22 +47,42 @@ npm run dev
 
 ## Variables de Entorno
 
-| Variable | Descripción | Requerida |
-|----------|-------------|-----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | Sí |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública anon de Supabase | Sí |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave service_role (solo servidor) | Sí |
-| `NEXT_PUBLIC_APP_URL` | URL pública base del portal, sin slash final | Sí |
-| `SMTP_HOST` | Host SMTP, para Gmail usa `smtp.gmail.com` | Sí |
-| `SMTP_PORT` | Puerto SMTP, para Gmail se recomienda `465` | Sí |
-| `SMTP_SECURE` | TLS implícito, usa `true` con puerto `465` | Sí |
-| `SMTP_USER` | Cuenta Gmail remitente | Sí |
-| `SMTP_PASS` | Contraseña de aplicación de Gmail, no la contraseña normal | Sí |
-| `EMAIL_FROM` | Remitente, ej. `CBT Num. 5 <tu_correo@gmail.com>` | Sí |
-| `EMAIL_REPLY_TO` | Correo de respuesta o soporte | No |
-| `NEXT_PUBLIC_SENTRY_DSN` | DSN de Sentry para error tracking | No |
+| Variable | Descripción | Tipo | Requerida |
+|----------|-------------|------|-----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | Texto | Sí |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública anon de Supabase | Secret | Sí |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave service_role (solo servidor) | Secret | Sí |
+| `NEXT_PUBLIC_APP_URL` | URL pública base del portal, sin slash final | Texto | Sí |
+| `SMTP_HOST` | Host SMTP de Brevo: `smtp-relay.brevo.com` | Texto | Sí |
+| `SMTP_PORT` | Puerto SMTP: `587` | Texto | Sí |
+| `SMTP_SECURE` | TLS implícito: `true` | Texto | Sí |
+| `SMTP_USER` | Email registrado en Brevo | Secret | Sí |
+| `SMTP_PASS` | API key o contraseña de Brevo | Secret | Sí |
+| `EMAIL_FROM` | Remitente, ej. `CBT Num. 5 <tu_correo@ejemplo.com>` | Texto | Sí |
+| `EMAIL_REPLY_TO` | Correo de respuesta o soporte | Texto | No |
+| `NEXT_PUBLIC_SENTRY_DSN` | DSN de Sentry para error tracking | Texto | No |
 
-Los correos de activación y recuperación se generan con enlaces seguros de Supabase Auth, pero el envío lo hace el proyecto mediante Gmail SMTP. En Cloudflare configura `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `EMAIL_REPLY_TO` y `SUPABASE_SERVICE_ROLE_KEY` como secrets. Para Gmail usa una contraseña de aplicación.
+## Configuración de Brevo
+
+1. Crea una cuenta gratuita en [Brevo.com](https://www.brevo.com/)
+2. En tu panel, ve a **SMTP & API > Información de SMTP**
+3. Obtén tu **API key** (tu contraseña SMTP es tu clave de API)
+4. Configura en tu entorno:
+   - `SMTP_HOST` = `smtp-relay.brevo.com`
+   - `SMTP_PORT` = `587`
+   - `SMTP_SECURE` = `true`
+   - `SMTP_USER` = tu email registrado en Brevo
+   - `SMTP_PASS` = tu API key de Brevo
+
+## Configuración en Cloudflare Pages
+
+En `Settings > Variables and Secrets`, marca como **Secret**:
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SMTP_USER`
+- `SMTP_PASS`
+
+Y el resto como variables de texto público.
 
 ## Scripts
 

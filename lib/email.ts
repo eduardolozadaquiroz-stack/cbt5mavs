@@ -1,16 +1,20 @@
 /**
  * lib/email.ts
  *
- * Envío de correos via Gmail API (OAuth2 + fetch).
- * Compatible con Cloudflare Pages edge runtime (no usa node:tls ni nodemailer).
+ * Envío de correos via SMTP (Brevo/Sendinblue).
+ * Usa nodemailer para máxima compatibilidad.
  *
  * Variables de entorno requeridas:
- *   GMAIL_CLIENT_ID      — OAuth2 Client ID de Google Cloud Console
- *   GMAIL_CLIENT_SECRET  — OAuth2 Client Secret
- *   GMAIL_REFRESH_TOKEN  — Refresh token (obtenido una vez con OAuth Playground)
- *   EMAIL_FROM           — Dirección remitente: "CBT Num. 5 <tu@gmail.com>"
- *   EMAIL_REPLY_TO       — (opcional) Dirección de respuesta
+ *   SMTP_HOST      — Host SMTP: smtp-relay.brevo.com
+ *   SMTP_PORT      — Puerto: 587
+ *   SMTP_SECURE    — TLS: true
+ *   SMTP_USER      — Email o usuario de Brevo
+ *   SMTP_PASS      — Contraseña/API key de Brevo
+ *   EMAIL_FROM     — Dirección remitente: "CBT Num. 5 <tu@ejemplo.com>"
+ *   EMAIL_REPLY_TO — (opcional) Dirección de respuesta
  */
+
+import nodemailer from "nodemailer";
 
 type AuthEmailKind = "welcome" | "password-reset";
 
@@ -38,6 +42,15 @@ type AuthEmailInput = {
 
 const DEFAULT_APP_URL = "https://cbt5mavs.pages.dev";
 
+// Validar variables SMTP requeridas
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Falta configurar variable de entorno: ${name}`);
+  }
+  return value;
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -59,11 +72,11 @@ function renderAuthEmail({ actionUrl, kind, name }: AuthEmailInput) {
   const title = isWelcome ? "Activa tu cuenta" : "Restablecer contraseña";
   const subject = isWelcome
     ? "Activa tu cuenta del portal CBT Num. 5"
-    : "Restablece tu contrasena del portal CBT Num. 5";
+    : "Restablece tu contraseña del portal CBT Num. 5";
   const intro = isWelcome
     ? "Tu cuenta en el portal escolar del CBT Num. 5 ha sido creada."
-    : "Recibimos una solicitud para restablecer la contrasena de tu cuenta.";
-  const cta = isWelcome ? "Activar mi cuenta" : "Crear nueva contrasena";
+    : "Recibimos una solicitud para restablecer la contraseña de tu cuenta.";
+  const cta = isWelcome ? "Activar mi cuenta" : "Crear nueva contraseña";
   const accent = isWelcome ? "#1e56ab" : "#d97706";
   const expiry = isWelcome ? "24 horas" : "1 hora";
 
@@ -91,7 +104,7 @@ function renderAuthEmail({ actionUrl, kind, name }: AuthEmailInput) {
               <h2 style="margin:0 0 10px;color:#1e3a5f;font-size:22px;text-align:center;">${title}</h2>
               <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;text-align:center;">
                 ${safeName ? `Hola, ${safeName}.<br />` : ""}${intro}<br />
-                Haz clic en el boton para continuar.
+                Haz clic en el botón para continuar.
               </p>
               <div style="text-align:center;margin:28px 0;">
                 <a href="${safeUrl}" style="display:inline-block;background:${accent};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 34px;border-radius:8px;">
@@ -103,7 +116,7 @@ function renderAuthEmail({ actionUrl, kind, name }: AuthEmailInput) {
               </p>
               <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0;" />
               <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.6;word-break:break-all;">
-                Si el boton no funciona, copia y pega este enlace en tu navegador:<br />
+                Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
                 <a href="${safeUrl}" style="color:#1e56ab;text-decoration:none;">${safeUrl}</a>
               </p>
             </td>
@@ -118,7 +131,7 @@ function renderAuthEmail({ actionUrl, kind, name }: AuthEmailInput) {
           </tr>
           <tr>
             <td style="background:#1a3a6b;padding:18px 40px;text-align:center;">
-              <p style="margin:0;color:#93c5fd;font-size:12px;">Este es un correo automatico, por favor no respondas a este mensaje.</p>
+              <p style="margin:0;color:#93c5fd;font-size:12px;">Este es un correo automático, por favor no respondas a este mensaje.</p>
             </td>
           </tr>
         </table>
@@ -140,85 +153,27 @@ El enlace expira en ${expiry}. Si no solicitaste este correo, puedes ignorarlo.`
   return { subject, html, text };
 }
 
-/* ── Gmail API helpers ──────────────────────────────────────────────────────── */
+/* ── Transporter SMTP (Brevo) ──────────────────────────────────────────────── */
 
-async function getAccessToken(): Promise<string> {
-  const clientId = process.env.GMAIL_CLIENT_ID;
-  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
-  const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
-  if (!clientId) throw new Error("Falta configurar GMAIL_CLIENT_ID.");
-  if (!clientSecret) throw new Error("Falta configurar GMAIL_CLIENT_SECRET.");
-  if (!refreshToken) throw new Error("Falta configurar GMAIL_REFRESH_TOKEN.");
+function getTransporter() {
+  if (transporter) return transporter;
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
+  const host = requireEnv("SMTP_HOST");
+  const port = parseInt(requireEnv("SMTP_PORT"), 10);
+  const secure = requireEnv("SMTP_SECURE") === "true";
+  const user = requireEnv("SMTP_USER");
+  const pass = requireEnv("SMTP_PASS");
+
+  transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
   });
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => res.statusText);
-    throw new Error(`Error al obtener access token de Google: ${detail}`);
-  }
-
-  const data = await res.json() as { access_token?: string };
-  if (!data.access_token) throw new Error("Google no devolvió access_token.");
-  return data.access_token;
-}
-
-/**
- * Codifica un string en base64url usando la Web Crypto API
- * disponible en todos los runtimes edge.
- */
-function toBase64Url(value: string): string {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function buildMimeMessage(
-  input: AuthEmailInput & { subject: string; html: string; text: string }
-): string {
-  const boundary = `cbt-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const from = process.env.EMAIL_FROM ?? "";
-  const replyTo = process.env.EMAIL_REPLY_TO ?? "";
-
-  const headers = [
-    `From: ${from}`,
-    `To: ${input.to}`,
-    `Subject: ${input.subject}`,
-    "MIME-Version: 1.0",
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-  ];
-  if (replyTo) headers.push(`Reply-To: ${replyTo}`);
-
-  const mime = [
-    ...headers,
-    "",
-    `--${boundary}`,
-    'Content-Type: text/plain; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    input.text,
-    "",
-    `--${boundary}`,
-    'Content-Type: text/html; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    input.html,
-    "",
-    `--${boundary}--`,
-    "",
-  ].join("\r\n");
-
-  return toBase64Url(mime);
+  return transporter;
 }
 
 /* ── Exports públicos ───────────────────────────────────────────────────────── */
@@ -243,27 +198,23 @@ export async function generatePasswordRecoveryLink(
 }
 
 export async function sendAuthEmail(input: AuthEmailInput) {
-  const from = process.env.EMAIL_FROM;
-  if (!from) throw new Error("Falta configurar EMAIL_FROM.");
+  const from = requireEnv("EMAIL_FROM");
+  const replyTo = process.env.EMAIL_REPLY_TO ?? "";
 
   const { subject, html, text } = renderAuthEmail(input);
-  const raw = buildMimeMessage({ ...input, subject, html, text });
-  const accessToken = await getAccessToken();
+  const transporter = getTransporter();
 
-  const res = await fetch(
-    "https://gmail.googleapis.com/gmail/v1/users/me/send",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ raw }),
-    }
-  );
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => res.statusText);
-    throw new Error(`Gmail API respondió con error ${res.status}: ${detail}`);
+  try {
+    await transporter.sendMail({
+      from,
+      to: input.to,
+      subject,
+      text,
+      html,
+      replyTo: replyTo || undefined,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Error enviando correo via SMTP: ${message}`);
   }
 }
