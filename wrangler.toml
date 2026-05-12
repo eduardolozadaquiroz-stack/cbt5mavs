@@ -10,7 +10,7 @@ NEXT_PUBLIC_APP_URL = "https://cbt5mavs.pages.dev"
 SMTP_HOST = "smtp-relay.brevo.com"
 SMTP_PORT = "587"
 SMTP_SECURE = "true"
-EMAIL_FROM = "CBT Num. 5 <ab0421001@smtp-brevo.com>"
+EMAIL_FROM = "CBT Num. 5 <eduardolozadaquiroz@gmail.com>"
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
 # SUPABASE_SERVICE_ROLE_KEY: wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY --project-name cbt5mavs

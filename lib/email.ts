@@ -193,6 +193,9 @@ async function sendViaBrevoApi(options: {
     const detail = await res.text().catch(() => "");
     throw new Error(`Brevo API ${res.status}: ${detail}`);
   }
+
+  const resBody = await res.json().catch(() => ({})) as Record<string, unknown>;
+  console.log(`[email] Brevo accepted → to=${options.to} messageId=${resBody.messageId ?? "?"} sender=${sender.email}`);
 }
 
 /* ── Exports públicos ───────────────────────────────────────────────────────── */
