@@ -79,55 +79,100 @@ function renderAuthEmail({ actionUrl, kind, name }: AuthEmailInput) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title} - CBT Num. 5</title>
+  <title>${title} - CBT Núm. 5</title>
 </head>
-<body style="margin:0;padding:0;background:#f0f4f8;font-family:Segoe UI,Arial,sans-serif;color:#1f2937;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0f4f8;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#eef2f8;font-family:'Segoe UI',Arial,sans-serif;color:#1f2937;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#eef2f8;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;max-width:580px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.10);">
+
+          <!-- HEADER -->
           <tr>
-            <td style="background:#1a3a6b;padding:32px 40px;text-align:center;">
-              <img src="${portalUrl}/logo.png" alt="CBT Num. 5 Chalco" width="72" height="72" style="display:block;margin:0 auto 16px;border-radius:12px;border:3px solid rgba(255,255,255,.25);" />
-              <p style="margin:0;color:#bfdbfe;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Centro de Bachillerato Tecnologico</p>
-              <h1 style="margin:6px 0 0;color:#ffffff;font-size:24px;line-height:1.2;">CBT Num. 5 - Chalco</h1>
+            <td style="background:linear-gradient(160deg,#0f2a5e 0%,#1e4fa8 100%);padding:40px 48px 32px;text-align:center;">
+              <!-- Logo con fondo blanco circular para que no se comprima -->
+              <div style="display:inline-block;background:#ffffff;border-radius:50%;width:96px;height:96px;line-height:96px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:20px;">
+                <img src="${portalUrl}/logo.png" alt="CBT Núm. 5" width="68" height="68"
+                  style="display:inline-block;vertical-align:middle;border-radius:50%;object-fit:contain;" />
+              </div>
+              <p style="margin:0 0 4px;color:#93c5fd;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Dirección General de Educación Tecnológica Industrial</p>
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;letter-spacing:0.3px;">Centro de Bachillerato Tecnológico Núm. 5</h1>
+              <p style="margin:6px 0 0;color:#bfdbfe;font-size:13px;">Chalco, Estado de México</p>
             </td>
           </tr>
+
+          <!-- BANDA DE ACENTO -->
           <tr>
-            <td style="padding:40px 40px 28px;">
-              <h2 style="margin:0 0 10px;color:#1e3a5f;font-size:22px;text-align:center;">${title}</h2>
-              <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;text-align:center;">
-                ${safeName ? `Hola, ${safeName}.<br />` : ""}${intro}<br />
-                Haz clic en el botón para continuar.
+            <td style="background:${accent};height:4px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- CUERPO -->
+          <tr>
+            <td style="padding:44px 48px 36px;">
+              <!-- Icono de acción -->
+              <div style="text-align:center;margin-bottom:24px;">
+                <div style="display:inline-block;background:${accent}18;border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;">
+                  <span style="font-size:26px;line-height:56px;display:inline-block;vertical-align:middle;">${isWelcome ? "👋" : "🔒"}</span>
+                </div>
+              </div>
+
+              <h2 style="margin:0 0 12px;color:#0f2a5e;font-size:24px;font-weight:700;text-align:center;line-height:1.3;">${title}</h2>
+
+              ${safeName ? `<p style="margin:0 0 6px;color:#334155;font-size:15px;text-align:center;font-weight:600;">Hola, ${safeName}.</p>` : ""}
+
+              <p style="margin:0 0 32px;color:#64748b;font-size:14px;line-height:1.75;text-align:center;">
+                ${intro}<br/>Haz clic en el botón para continuar.
               </p>
-              <div style="text-align:center;margin:28px 0;">
-                <a href="${safeUrl}" style="display:inline-block;background:${accent};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 34px;border-radius:8px;">
+
+              <!-- Botón CTA -->
+              <div style="text-align:center;margin-bottom:32px;">
+                <a href="${safeUrl}"
+                  style="display:inline-block;background:${accent};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:16px 42px;border-radius:10px;letter-spacing:0.3px;box-shadow:0 4px 14px ${accent}55;">
                   ${cta}
                 </a>
               </div>
-              <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;text-align:center;line-height:1.5;">
-                Este enlace expira en <strong>${expiry}</strong>. Si no solicitaste este correo, puedes ignorarlo.
-              </p>
-              <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0;" />
-              <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.6;word-break:break-all;">
-                Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
-                <a href="${safeUrl}" style="color:#1e56ab;text-decoration:none;">${safeUrl}</a>
+
+              <!-- Aviso de expiración -->
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 20px;text-align:center;margin-bottom:28px;">
+                <p style="margin:0;color:#64748b;font-size:12px;line-height:1.6;">
+                  ⏱ Este enlace expira en <strong style="color:#334155;">${expiry}</strong>.
+                  Si no solicitaste este correo, puedes ignorarlo con seguridad.
+                </p>
+              </div>
+
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 20px;" />
+
+              <!-- Enlace de respaldo -->
+              <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.7;">
+                ¿El botón no funciona? Copia y pega este enlace en tu navegador:<br/>
+                <a href="${safeUrl}" style="color:#1e56ab;text-decoration:none;word-break:break-all;">${safeUrl}</a>
               </p>
             </td>
           </tr>
+
+          <!-- FOOTER -->
           <tr>
-            <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 40px;text-align:center;">
-              <p style="margin:0;color:#475569;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Portal escolar</p>
-              <p style="margin:5px 0 0;color:#1e56ab;font-size:12px;">
-                <a href="${portalUrl}/login" style="color:#1e56ab;text-decoration:none;">${portalUrl.replace(/^https?:\/\//, "")}/login</a>
+            <td style="background:#f1f5fb;border-top:1px solid #e2e8f0;padding:24px 48px;text-align:center;">
+              <p style="margin:0 0 6px;color:#1e4fa8;font-size:13px;font-weight:700;">Portal Escolar CBT Núm. 5</p>
+              <p style="margin:0 0 12px;">
+                <a href="${portalUrl}/login" style="color:#1e56ab;font-size:12px;text-decoration:none;">${portalUrl.replace(/^https?:\/\//, "")}/login</a>
+              </p>
+              <p style="margin:0;color:#94a3b8;font-size:11px;line-height:1.6;">
+                Este es un mensaje automático — por favor no respondas a este correo.<br/>
+                Chalco, Estado de México · Ciclo escolar 2025–2026
               </p>
             </td>
           </tr>
+
+          <!-- BARRA INFERIOR -->
           <tr>
-            <td style="background:#1a3a6b;padding:18px 40px;text-align:center;">
-              <p style="margin:0;color:#93c5fd;font-size:12px;">Este es un correo automático, por favor no respondas a este mensaje.</p>
+            <td style="background:linear-gradient(160deg,#0f2a5e 0%,#1e4fa8 100%);padding:14px 48px;text-align:center;">
+              <p style="margin:0;color:#93c5fd;font-size:11px;letter-spacing:0.5px;">
+                © 2025–2026 Centro de Bachillerato Tecnológico Núm. 5 · Chalco
+              </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
