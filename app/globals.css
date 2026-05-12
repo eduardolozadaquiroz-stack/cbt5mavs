@@ -125,6 +125,10 @@ html.dark select {
 /* ── Notificación no leída ── */
 html.dark .bg-blue-50\/60            { background-color: rgba(30,50,80,0.5) !important; }
 
+/* ── Zebra striping en tablas (odd:/even: prefijos que CSS no hereda del override directo) ── */
+html.dark .odd\:bg-surface:nth-child(odd)         { background-color: #162030 !important; }
+html.dark .even\:bg-surface-bright:nth-child(even) { background-color: #0f1e2e !important; }
+
 /* ── Hover de filas en tablas / listas ── */
 html.dark .hover\:bg-surface-variant\/40:hover { background-color: rgba(26,45,64,0.4) !important; }
 html.dark .hover\:bg-surface-container-lowest:hover { background-color: #1a2d40 !important; }
