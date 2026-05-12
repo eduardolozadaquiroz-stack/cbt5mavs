@@ -16,18 +16,29 @@ const CONFIG_ID = 1;
 
 // GET — público, cualquiera puede leer la config publicada del portal
 export async function GET() {
-  const db = createServiceClient();
-  const { data, error } = await db
-    .from(TABLE)
-    .select("config")
-    .eq("id", CONFIG_ID)
-    .single();
+  try {
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from(TABLE)
+      .select("config")
+      .eq("id", CONFIG_ID)
+      .single();
 
-  if (error || !data) {
-    return NextResponse.json({ config: null });
+    if (error || !data) {
+      return NextResponse.json({ config: null });
+    }
+
+    return NextResponse.json({ config: data.config });
+  } catch (error) {
+    console.error("[admin/config GET] Error al leer site_config:", error);
+    return NextResponse.json(
+      {
+        error:
+          "Error interno del servidor al leer la configuración. Verifique que SUPABASE_SERVICE_ROLE_KEY esté configurada.",
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ config: data.config });
 }
 
 // POST — solo administradores autenticados
