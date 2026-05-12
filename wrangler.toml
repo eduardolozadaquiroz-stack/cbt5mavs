@@ -14,9 +14,6 @@ EMAIL_FROM = "CBT Num. 5 <ab0421001@smtp-brevo.com>"
 
 # NEXT_PUBLIC_* se embeben en el bundle durante next build (no necesitan estar aquí)
 # SUPABASE_SERVICE_ROLE_KEY: wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY --project-name cbt5mavs
-# GMAIL_CLIENT_ID:           wrangler pages secret put GMAIL_CLIENT_ID --project-name cbt5mavs
-# GMAIL_CLIENT_SECRET:       wrangler pages secret put GMAIL_CLIENT_SECRET --project-name cbt5mavs
-# GMAIL_REFRESH_TOKEN:       wrangler pages secret put GMAIL_REFRESH_TOKEN --project-name cbt5mavs
-# EMAIL_FROM:                wrangler pages secret put EMAIL_FROM --project-name cbt5mavs
-#   Ejemplo: "CBT Num. 5 Chalco <tucuenta@gmail.com>"
+# BREVO_API_KEY:             wrangler pages secret put BREVO_API_KEY --project-name cbt5mavs
+#   Obtener en: https://app.brevo.com/settings/keys/api  (Settings > API Keys, empieza con xkeysib-)
 # EMAIL_REPLY_TO (opcional): wrangler pages secret put EMAIL_REPLY_TO --project-name cbt5mavs

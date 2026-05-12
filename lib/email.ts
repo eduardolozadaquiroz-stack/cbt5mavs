@@ -5,7 +5,7 @@
  * Usa fetch() — compatible con Cloudflare Workers (no depende de net/tls).
  *
  * Variables de entorno requeridas:
- *   SMTP_PASS      — API key de Brevo (SMTP master password = API key v3)
+ *   BREVO_API_KEY  — API key v3 de Brevo (Settings > API Keys, empieza con xkeysib-)
  *   EMAIL_FROM     — Dirección remitente: "CBT Num. 5 <tu@ejemplo.com>"
  *   EMAIL_REPLY_TO — (opcional) Dirección de respuesta
  */
@@ -152,7 +152,7 @@ El enlace expira en ${expiry}. Si no solicitaste este correo, puedes ignorarlo.`
 /**
  * Envía un correo usando la API REST de Brevo.
  * fetch() funciona en Cloudflare Workers; nodemailer (net/tls) NO.
- * El SMTP_PASS de Brevo es igual a la API key v3.
+ * Requiere BREVO_API_KEY (API key v3, empieza con xkeysib-). Settings > API Keys en Brevo.
  */
 async function sendViaBrevoApi(options: {
   from: string;
@@ -162,7 +162,8 @@ async function sendViaBrevoApi(options: {
   text: string;
   replyTo?: string;
 }) {
-  const apiKey = requireEnv("SMTP_PASS");
+  const apiKey = process.env.BREVO_API_KEY ?? process.env.SMTP_PASS ?? "";
+  if (!apiKey) throw new Error("Falta configurar variable de entorno: BREVO_API_KEY");
 
   // Parsear EMAIL_FROM: "Nombre <email@dominio.com>" → { name, email }
   const fromMatch = options.from.match(/^(.+?)\s*<(.+?)>$/);
