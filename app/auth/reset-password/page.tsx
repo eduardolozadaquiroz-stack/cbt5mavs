@@ -7,6 +7,7 @@ import Link from "next/link";
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isActivate = searchParams.get("mode") === "activate";
 
   const [password, setPassword]     = useState("");
   const [confirm, setConfirm]       = useState("");
@@ -79,8 +80,14 @@ function ResetPasswordForm() {
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
           </svg>
         </div>
-        <h2 className="font-headline-md text-headline-md text-on-surface mb-2">¡Contraseña actualizada!</h2>
-        <p className="text-on-surface-variant text-sm">Serás redirigido al inicio de sesión en unos momentos.</p>
+        <h2 className="font-headline-md text-headline-md text-on-surface mb-2">
+          {isActivate ? "¡Cuenta activada!" : "¡Contraseña actualizada!"}
+        </h2>
+        <p className="text-on-surface-variant text-sm">
+          {isActivate
+            ? "Tu contraseña ha sido establecida. Serás redirigido al login."
+            : "Serás redirigido al inicio de sesión en unos momentos."}
+        </p>
         <Link href="/login" className="mt-4 inline-block text-primary hover:underline text-sm">
           Ir al login →
         </Link>
@@ -90,14 +97,24 @@ function ResetPasswordForm() {
 
   return (
     <div className="px-10 pb-10 pt-6">
-      <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 rounded-full flex items-center justify-center mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-primary">
-          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-        </svg>
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isActivate ? "bg-green-50 dark:bg-green-950/40" : "bg-blue-50 dark:bg-blue-950/40"}`}>
+        {isActivate ? (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-green-600">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-primary">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+          </svg>
+        )}
       </div>
-      <h1 className="font-headline-md text-headline-md text-on-surface mb-1">Nueva contraseña</h1>
+      <h1 className="font-headline-md text-headline-md text-on-surface mb-1">
+        {isActivate ? "Activa tu cuenta" : "Nueva contraseña"}
+      </h1>
       <p className="font-body-sm text-body-sm text-on-surface-variant mb-6">
-        Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres, una letra y un número.
+        {isActivate
+          ? "Elige una contraseña segura para acceder al portal escolar."
+          : "Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres, una letra y un número."}
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -141,7 +158,7 @@ function ResetPasswordForm() {
           disabled={loading || !sessionReady}
           className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all mt-2"
         >
-          {loading ? "Guardando..." : "Guardar nueva contraseña"}
+          {loading ? "Guardando..." : isActivate ? "Activar mi cuenta" : "Guardar nueva contraseña"}
         </button>
       </form>
 

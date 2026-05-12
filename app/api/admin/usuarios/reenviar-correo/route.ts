@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   // Generar el enlace con Supabase Auth, pero enviar el correo desde el proyecto.
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? request.nextUrl.origin;
-  const redirectTo = `${origin.replace(/\/$/, "")}/auth/reset-password`;
+  const redirectTo = `${origin.replace(/\/$/, "")}/auth/reset-password?mode=activate`;
 
   try {
     const actionUrl = await generatePasswordRecoveryLink(admin, correo, redirectTo);
