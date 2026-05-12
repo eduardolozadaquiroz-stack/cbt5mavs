@@ -1,20 +1,14 @@
 /**
  * lib/email.ts
  *
- * Envío de correos via SMTP (Brevo/Sendinblue).
- * Usa nodemailer para máxima compatibilidad.
+ * Envío de correos via Brevo HTTP API v3.
+ * Usa fetch() — compatible con Cloudflare Workers (no depende de net/tls).
  *
  * Variables de entorno requeridas:
- *   SMTP_HOST      — Host SMTP: smtp-relay.brevo.com
- *   SMTP_PORT      — Puerto: 587
- *   SMTP_SECURE    — TLS: true
- *   SMTP_USER      — Email o usuario de Brevo
- *   SMTP_PASS      — Contraseña/API key de Brevo
+ *   SMTP_PASS      — API key de Brevo (SMTP master password = API key v3)
  *   EMAIL_FROM     — Dirección remitente: "CBT Num. 5 <tu@ejemplo.com>"
  *   EMAIL_REPLY_TO — (opcional) Dirección de respuesta
  */
-
-import nodemailer from "nodemailer";
 
 type AuthEmailKind = "welcome" | "password-reset";
 
@@ -153,27 +147,51 @@ El enlace expira en ${expiry}. Si no solicitaste este correo, puedes ignorarlo.`
   return { subject, html, text };
 }
 
-/* ── Transporter SMTP (Brevo) ──────────────────────────────────────────────── */
+/* ── Brevo HTTP API v3 ─────────────────────────────────────────────────────── */
 
-let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+/**
+ * Envía un correo usando la API REST de Brevo.
+ * fetch() funciona en Cloudflare Workers; nodemailer (net/tls) NO.
+ * El SMTP_PASS de Brevo es igual a la API key v3.
+ */
+async function sendViaBrevoApi(options: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+}) {
+  const apiKey = requireEnv("SMTP_PASS");
 
-function getTransporter() {
-  if (transporter) return transporter;
+  // Parsear EMAIL_FROM: "Nombre <email@dominio.com>" → { name, email }
+  const fromMatch = options.from.match(/^(.+?)\s*<(.+?)>$/);
+  const sender = fromMatch
+    ? { name: fromMatch[1].trim(), email: fromMatch[2].trim() }
+    : { email: options.from };
 
-  const host = requireEnv("SMTP_HOST");
-  const port = parseInt(requireEnv("SMTP_PORT"), 10);
-  const secure = requireEnv("SMTP_SECURE") === "true";
-  const user = requireEnv("SMTP_USER");
-  const pass = requireEnv("SMTP_PASS");
+  const payload = {
+    sender,
+    to: [{ email: options.to }],
+    subject: options.subject,
+    htmlContent: options.html,
+    textContent: options.text,
+    ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+  };
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify(payload),
   });
 
-  return transporter;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Brevo API ${res.status}: ${detail}`);
+  }
 }
 
 /* ── Exports públicos ───────────────────────────────────────────────────────── */
@@ -202,19 +220,18 @@ export async function sendAuthEmail(input: AuthEmailInput) {
   const replyTo = process.env.EMAIL_REPLY_TO ?? "";
 
   const { subject, html, text } = renderAuthEmail(input);
-  const transporter = getTransporter();
 
   try {
-    await transporter.sendMail({
+    await sendViaBrevoApi({
       from,
       to: input.to,
       subject,
-      text,
       html,
+      text,
       replyTo: replyTo || undefined,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    throw new Error(`Error enviando correo via SMTP: ${message}`);
+    throw new Error(`Error enviando correo via Brevo: ${message}`);
   }
 }

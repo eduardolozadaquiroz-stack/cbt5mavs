@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
       name: usuario.nombre,
     });
   } catch (emailError) {
-    console.error("[reenviar-correo] email error:", emailError);
-    return NextResponse.json({ error: "No se pudo enviar el correo. Verifica la configuración SMTP de Gmail." }, { status: 500 });
+    const msg = emailError instanceof Error ? emailError.message : String(emailError);
+    console.error("[reenviar-correo] email error:", msg);
+    return NextResponse.json({ error: `No se pudo enviar el correo: ${msg}` }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
