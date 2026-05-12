@@ -73,9 +73,18 @@ export async function POST(request: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    const msg = authError?.message?.includes("already registered")
-      ? "El correo ya está registrado"
-      : "Error al crear cuenta";
+    console.error("[usuarios POST] auth.createUser error:", authError?.status, authError?.message);
+    const errMsg = authError?.message ?? "";
+    let msg = errMsg || "Error al crear cuenta";
+    if (errMsg.includes("already registered") || errMsg.includes("already been registered") || errMsg.includes("email address already found") || errMsg.includes("User already exists")) {
+      msg = "El correo ya está registrado";
+    } else if (errMsg.includes("invalid") && errMsg.includes("email")) {
+      msg = "Formato de correo inválido";
+    } else if (errMsg.includes("Password")) {
+      msg = "La contraseña no cumple los requisitos de Supabase";
+    } else if (errMsg.includes("signup") && errMsg.includes("disabled")) {
+      msg = "El registro está deshabilitado en la configuración del proyecto";
+    }
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
